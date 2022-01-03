@@ -1,5 +1,6 @@
 import sys
 import pandas as pd
+import datetime
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 
@@ -11,7 +12,6 @@ from main_window import Ui_MainWindow
 from moodle_sync import MoodleSync
 from settings_dialog import Ui_Dialog
 
-
 # Translate .ui to .py
 # python -m PyQt5.uic.pyuic -x moodle_sync_aggregate.ui -o main_window.py (mac)
 # pyuic5 -o main_window.py .\moodle_sync_aggregate.ui (win)
@@ -20,11 +20,10 @@ from settings_dialog import Ui_Dialog
 # Nice to Have
 # TODO Get Students Jahrgang from moodle Group
 # TODO Add Scrollbar to Modules List
-# TODO Add ALLE/KEINE Checkbox
-# TODO Startup Config (export filename, ...)
-# TODO Filename generation (timestamp-kursname-klassen.xlsx)
+# TODO Startup Config (export filepath, ...)
 # TODO Format exported excel
 # TODO Add Dialog for Students without Class
+# TODO Failed to load Dialog
 
 # Next Steps for Core Functionality
 # Done
@@ -43,6 +42,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.export_pushButton.clicked.connect(self.export_grades)
         self.reload_pushButton.clicked.connect(self.download_courses)
         self.actionSettings.triggered.connect(self.open_settings)
+        self.all_none_checkBox.stateChanged.connect(self.all_none_checkbox_changed)
 
         # Data
         self.current_course = None  # Text
@@ -85,7 +85,7 @@ class Window(QMainWindow, Ui_MainWindow):
             try:
                 self.courses = self.moodle.get_recent_courses()
                 self.set_courses()
-                self.download_pushButton.setEnabled(True)
+                self.download_pushButton.setEnabled(self.all_none_checkBox.checkState())
             except Exception as e:
                 self.failed_to_load("Failed to load courses. Please check Settings.")
         else:
@@ -156,7 +156,10 @@ class Window(QMainWindow, Ui_MainWindow):
                     if cell.value == cb.text():
                         ws.delete_cols(cell.column, 1)
 
-        filename, _ = QFileDialog.getSaveFileName(self, "Export Grades", "", "Excel files (*.xlsx)", )
+        ct = datetime.datetime.now()
+        filename = f"{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
+
+        filename, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)", )
         if filename:
             wb.save(filename)
 
@@ -171,6 +174,10 @@ class Window(QMainWindow, Ui_MainWindow):
             self.settings.setValue("key", self.key)
             self.settings.setValue("studentlist", self.student_list_path)
         self.login()
+
+    def all_none_checkbox_changed(self):
+        for cb in self.checkboxes:
+            cb.setChecked(self.all_none_checkBox.checkState())
 
     def closeEvent(self, e):
         self.settings.setValue("size", self.size())

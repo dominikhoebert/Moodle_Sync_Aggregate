@@ -15,9 +15,9 @@ Token benötigt.
 
 - Get Students Jahrgang from moodle Group
 - Add Scrollbar to Modules List
-- Add ALLE/KEINE Checkbox
-- Startup Config (Splitter, elearning-URL, elearning-Key, export filename, ...)
-- Filename generation (timestamp-kursname-klassen.xlsx)
+- ~~Add ALLE/KEINE Checkbox~~
+- Startup Config (~~Splitter, elearning-URL, elearning-Key,~~ export filepath, ...)
+- ~~Filename generation (timestamp-kursname-klassen.xlsx)~~
 - Format exported excel
 - Add Dialog for Students without Class
 
