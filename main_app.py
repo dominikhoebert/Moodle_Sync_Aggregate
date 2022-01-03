@@ -1,8 +1,10 @@
 import sys
 import pandas as pd
 import datetime
-from openpyxl import Workbook
+from openpyxl import Workbook, worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
+from openpyxl.utils import get_column_letter
 
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QCheckBox, QFileDialog
 from PyQt5.QtCore import pyqtSlot, QSettings, QPoint, QSize
@@ -11,6 +13,7 @@ from main_window import Ui_MainWindow
 
 from moodle_sync import MoodleSync
 from settings_dialog import Ui_Dialog
+
 
 # Translate .ui to .py
 # python -m PyQt5.uic.pyuic -x moodle_sync_aggregate.ui -o main_window.py (mac)
@@ -21,8 +24,7 @@ from settings_dialog import Ui_Dialog
 # TODO Get Students Jahrgang from moodle Group
 # TODO Add Scrollbar to Modules List
 # TODO Startup Config (export filepath, ...)
-# TODO Format exported excel
-# TODO Add Dialog for Students without Class
+# TODO Format exported excel (colum size,...)
 # TODO Failed to load Dialog
 
 # Next Steps for Core Functionality
@@ -155,6 +157,11 @@ class Window(QMainWindow, Ui_MainWindow):
                 for cell in ws[1]:
                     if cell.value == cb.text():
                         ws.delete_cols(cell.column, 1)
+
+        tab = worksheet.table.Table(displayName="Table1", ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
+        tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
+                                                            showColumnStripes=False)
+        ws.add_table(tab)
 
         ct = datetime.datetime.now()
         filename = f"{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"

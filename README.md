@@ -19,7 +19,6 @@ Token benötigt.
 - Startup Config (~~Splitter, elearning-URL, elearning-Key,~~ export filepath, ...)
 - ~~Filename generation (timestamp-kursname-klassen.xlsx)~~
 - Format exported excel
-- Add Dialog for Students without Class
 
 Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
 
