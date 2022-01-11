@@ -29,6 +29,8 @@ Token benötigt.
 
 ## TODOs
 
+- Error Messages
+- no classes without studentlist
 - Login to Moodle using Username and Password
 - Studentlist standartpath to sharpoint
 - Using LDAP for studentlist?
