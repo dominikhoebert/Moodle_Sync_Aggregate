@@ -1,16 +1,16 @@
 import sys
-import pandas as pd
 import datetime
+
+import pandas as pd
 from openpyxl import Workbook, worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.utils import get_column_letter
-
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QCheckBox, QFileDialog
 from PyQt5.QtCore import pyqtSlot, QSettings, QPoint, QSize
 from PyQt5.QtGui import QIcon
-from main_window import Ui_MainWindow
 
+from main_window import Ui_MainWindow
 from moodle_sync import MoodleSync
 from settings_dialog import Ui_Dialog
 
@@ -19,6 +19,9 @@ from settings_dialog import Ui_Dialog
 # python -m PyQt5.uic.pyuic -x moodle_sync_aggregate.ui -o main_window.py (mac)
 # pyuic5 -o main_window.py .\moodle_sync_aggregate.ui (win)
 # pyuic5 -o settings_dialog.py .\settings.ui
+
+# Pyinstaller
+# pyinstaller -n Moodle_Sync_Aggregate_20220111v1 --onefile main_app.py
 
 # Nice to Have
 # TODO Get Students Jahrgang from moodle Group
@@ -113,6 +116,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.courselistWidget.setCurrentRow(0)
         self.grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
 
+        self.grades = self.grades.replace("nicht erfüllt", "n")
         self.grades = self.grades.replace("Nicht erfüllt", "n")
         self.grades = self.grades.replace("GK vollständig", "GKv")
         self.grades = self.grades.replace("GK überwiegend", "GKü")

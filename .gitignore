@@ -1,1 +1,4 @@
 data/
+dist/
+/main_app.spec
+/test.spec
