@@ -6,7 +6,7 @@ Token benötigt.
 ## Funktionalität
 
 - Automatisierter Download aller SchülerInnen Bewertungen in einem Kurs
-- Gruppen werden angezeigt
+- Gruppen werden exportiert
 - Automatisiertes Matching der SchülerInnen Namen zur Jahrgangszuordnung (Schülerliste mit Klassen wird benötigt)
 - Auswahl der zu speichernden Bewertungen über die Grafische Benutzeroberfläche
 - Verkürzung der Kompetenzorientierten Bewertungen (GKü, GKv, ...)
@@ -16,8 +16,8 @@ Token benötigt.
 
 - Moodle Server URL
 - Moodle Authorization Key
-- Studenlist.csv
-- Certifi Zertifikat
+- Studenlist.csv *optional
+- (Certifi Zertifikat) only for run from source
 
 ### Python Dependencies
 
@@ -37,7 +37,6 @@ Token benötigt.
 - ~~Studentlist standartpath to sharpoint~~
 - Using LDAP for studentlist?
 - ~~Get Students Jahrgang from moodle Group~~
-- Add Scrollbar to Modules List
 - ~~Add ALLE/KEINE Checkbox~~
 - ~~Startup Config (Splitter, elearning-URL, elearning-Key, export filepath, ...)~~
 - ~~Filename generation (timestamp-kursname-klassen.xlsx)~~

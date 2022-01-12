@@ -4,11 +4,9 @@ import datetime
 import pandas as pd
 from openpyxl import Workbook, worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.utils import get_column_letter
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QCheckBox, QFileDialog
-from PyQt5.QtCore import pyqtSlot, QSettings, QPoint, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QSettings, QPoint, QSize
 
 from main_window import Ui_MainWindow
 from moodle_sync import MoodleSync
@@ -68,7 +66,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.url = self.settings.value("url", None)
         self.key = self.settings.value("key", None)
         self.student_list_path = self.settings.value("studentlist",
-                                                     "~/tgm - Die Schule der Technik/HIT - Abteilung für Informationstechnologie - Dokumente/Organisation/Tools/studentlist.csv")
+                                                     "~/tgm - Die Schule der Technik/HIT - Abteilung für Informations"
+                                                     "technologie - Dokumente/Organisation/Tools/studentlist.csv")
         self.moodle = None
 
         self.login()
@@ -82,8 +81,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def failed_to_load(self, message, error=None):
         print(message, error)
-        msgBox = QMessageBox(QMessageBox.Information, "Fehler", message)
-        msgBox.exec_()
+        msg_box = QMessageBox(QMessageBox.Information, "Fehler", message)
+        msg_box.exec_()
 
     def get_course_id(self, name):
         return self.courses[name]['id']
@@ -205,7 +204,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def open_settings(self):
         settings = SettingsDlg(self, url=self.settings.value("url", ""), key=self.settings.value("key", ""),
-                               studentlist=self.settings.value("studentlist", ""))
+                               studentlist=self.student_list_path)
         if settings.exec():
             self.url = settings.ui.url_lineEdit.text()
             self.key = settings.ui.key_lineEdit.text()
