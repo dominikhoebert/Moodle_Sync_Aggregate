@@ -67,7 +67,8 @@ class Window(QMainWindow, Ui_MainWindow):
         # Startup
         self.url = self.settings.value("url", None)
         self.key = self.settings.value("key", None)
-        self.student_list_path = self.settings.value("studentlist", None)
+        self.student_list_path = self.settings.value("studentlist",
+                                                     "~/tgm - Die Schule der Technik/HIT - Abteilung für Informationstechnologie - Dokumente/Organisation/Tools/studentlist.csv")
         self.moodle = None
 
         self.login()
@@ -79,8 +80,10 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             self.failed_to_load("Moodle URL/Key not defined. Please check Settings.")
 
-    def failed_to_load(self, message):
-        print(message)
+    def failed_to_load(self, message, error=None):
+        print(message, error)
+        msgBox = QMessageBox(QMessageBox.Information, "Fehler", message)
+        msgBox.exec_()
 
     def get_course_id(self, name):
         return self.courses[name]['id']
@@ -92,7 +95,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.set_courses()
                 self.download_pushButton.setEnabled(self.all_none_checkBox.checkState())
             except Exception as e:
-                self.failed_to_load("Failed to load courses. Please check Settings.")
+                self.failed_to_load("Failed to load courses. Please check Settings.", e)
         else:
             self.failed_to_load("Moodle URL/Key not defined. Please check Settings.")
 
@@ -110,11 +113,21 @@ class Window(QMainWindow, Ui_MainWindow):
         try:
             self.student_list = pd.read_csv(self.student_list_path)
         except Exception as e:
-            self.failed_to_load("Failed to load Student List CSV. Please check Settings.")
+            print(
+                "Failed to load Student List CSV. Please check Settings.",
+                e)
 
         if self.current_course is None:
             self.courselistWidget.setCurrentRow(0)
         self.grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
+
+        userlist = []
+        for uid in self.grades.userid:
+            userlist.append({"userid": uid, "courseid": self.get_course_id(self.current_course)})
+        user_info = self.moodle.get_student_info(userlist=userlist)
+        self.grades = self.grades.merge(user_info, how='left', left_on='userid', right_on='id')
+        self.grades = self.grades.drop(['userid', 'id', 'fullname'], axis=1)
+        self.grades = self.grades.rename(columns={'groups': 'Gruppen', 'email': 'Email'})
 
         self.grades = self.grades.replace("nicht erfüllt", "n")
         self.grades = self.grades.replace("Nicht erfüllt", "n")
@@ -125,14 +138,17 @@ class Window(QMainWindow, Ui_MainWindow):
         self.grades = self.grades.replace("vollständig erfüllt", "v")
         self.grades = self.grades.replace("überwiegend erfüllt", "ü")
 
-        self.grades[['a', 'b', 'c']] = self.grades['Schüler'].str.lower().str.split(' ', 2, expand=True)
-        self.grades['Name2'] = self.grades['a'] + ' ' + self.grades['b']
-        self.student_list[['a', 'b', 'c']] = self.student_list['Name'].str.lower().str.split(' ', 2, expand=True)
-        self.student_list['Name3'] = self.student_list['a'] + ' ' + self.student_list['b']
-        self.grades = self.grades.merge(self.student_list, how='left', left_on='Name2', right_on='Name3')
-        self.grades = self.grades.drop(['a_x', 'b_x', 'c_x', 'Name2', 'Name', 'a_y', 'b_y', 'c_y', 'Name3'], axis=1)
-        self.grades = self.grades[["Schüler", "Klasse"] + list(self.grades.columns)[1:-1]]
+        if self.student_list is not None:
+            self.grades[['a', 'b', 'c']] = self.grades['Schüler'].str.lower().str.split(' ', 2, expand=True)
+            self.grades['Name2'] = self.grades['a'] + ' ' + self.grades['b']
+            self.student_list[['a', 'b', 'c']] = self.student_list['Name'].str.lower().str.split(' ', 2, expand=True)
+            self.student_list['Name3'] = self.student_list['a'] + ' ' + self.student_list['b']
+            self.grades = self.grades.merge(self.student_list, how='left', left_on='Name2', right_on='Name3')
+            self.grades = self.grades.drop(['a_x', 'b_x', 'c_x', 'Name2', 'Name', 'a_y', 'b_y', 'c_y', 'Name3'], axis=1)
+        else:
+            self.grades["Klasse"] = ""
 
+        self.grades = self.grades[["Schüler", "Klasse", "Gruppen", "Email"] + list(self.grades.columns)[1:-3]]
         self.create_modules_list()
 
     def create_modules_list(self):
@@ -141,7 +157,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.tasks_verticalLayout.itemAt(i).widget().setParent(None)
 
         for module in list(self.grades.columns):
-            if module not in ["Schüler", 'Klasse']:
+            if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email']:
                 cb = QCheckBox(module, self)
                 cb.setChecked(True)
                 self.tasks_verticalLayout.addWidget(cb)
@@ -162,17 +178,30 @@ class Window(QMainWindow, Ui_MainWindow):
                     if cell.value == cb.text():
                         ws.delete_cols(cell.column, 1)
 
+        ws.column_dimensions['A'].width = 35
+        ws.column_dimensions['B'].width = 6
+        ws.column_dimensions['C'].width = 8
+        ws.column_dimensions['D'].width = 10
+        ws.column_dimensions[get_column_letter(ws.max_column)].width = 5
+
+        for i in range(5, ws.max_column):
+            ws.column_dimensions[get_column_letter(i)].width = 4
+
+        ws.freeze_panes = ws['B1']
+
         tab = worksheet.table.Table(displayName="Table1", ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
         tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
                                                             showColumnStripes=False)
         ws.add_table(tab)
 
+        directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()
-        filename = f"{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
+        filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
 
-        filename, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)", )
-        if filename:
-            wb.save(filename)
+        file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
+        if file:
+            wb.save(file)
+            self.settings.setValue("dir", file[:file.rfind("/")])  # TODO test on mac if sep is also "/" (maybe "\")
 
     def open_settings(self):
         settings = SettingsDlg(self, url=self.settings.value("url", ""), key=self.settings.value("key", ""),

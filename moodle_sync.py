@@ -26,20 +26,16 @@ class MoodleSync:
                         modules[module['name']] = {'id': module['id']}
         return modules
 
-    def get_students_of_module(self, module_id):
-        response = moodle_api.call('mod_assign_list_participants', assignid=module_id, groupid=3, filter="")
-        print(response)
-
     def get_gradereport_of_course(self, course_id):
         response = moodle_api.call('gradereport_user_get_grade_items', courseid=course_id)
         graditems = {}
         for graditem in response['usergrades'][0]['gradeitems']:
             graditems[graditem['itemname']] = graditem['id']
 
-        df = pd.DataFrame(columns=['userfullname'] + list(graditems.keys()))
+        df = pd.DataFrame(columns=['userfullname', 'userid'] + list(graditems.keys()))
 
         for student in response['usergrades']:
-            grades = {'userfullname': student['userfullname']}
+            grades = {'userfullname': student['userfullname'], "userid": student['userid']}
             for gradeitem in student['gradeitems']:
                 grades[gradeitem['itemname']] = gradeitem['gradeformatted']
             df = df.append(grades, ignore_index=True)
@@ -47,3 +43,25 @@ class MoodleSync:
         df = df.rename(columns={None: 'Kurs', 'userfullname': 'Schüler'})
         return df
 
+    def get_student_info(self, userlist):
+        """
+        Takes an array of dict with key userid=int, courseid=int
+        Returns a DataFrame with user info id, fullname, email, groups (all groups as joined str)
+
+        :param userlist:
+        :return DataFrame:
+        """
+        response = moodle_api.call('core_user_get_course_user_profiles', userlist=userlist)
+        user_df = pd.DataFrame(columns=['id', 'fullname', 'email', 'groups'])
+        for student in response:
+            groups_list = []
+            for group in student["groups"]:
+                groups_list.append(group["name"])
+            groups = ""
+            if len(groups_list) > 0:
+                groups = ",".join(groups_list)
+            user_df = user_df.append(
+                {"id": student["id"], "fullname": student["fullname"], "email": student["email"], "groups": groups},
+                ignore_index=True)
+
+        return user_df
