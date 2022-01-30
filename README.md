@@ -42,6 +42,13 @@ Token benötigt.
 - ~~Filename generation (timestamp-kursname-klassen.xlsx)~~
 - ~~Format exported excel~~
 - Berechnungen?
+- Auto Numbers detection and format as number in excel
+- Auto GK/EK detection
+- bedingte formatierung für EKv/EKü
+- bedingte formatierung rot für GK wenn -/n
+- bedingte formatierung für v/ü wenn EK
+- zusammenfassen der Kompetenzbereiche abhängig von Modulnummer
+- Berechnung und Streichungen von WH/Wiederholung/SMÜ
 
 Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
 

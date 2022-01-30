@@ -19,7 +19,7 @@ from settings_dialog import Ui_Dialog
 # pyuic5 -o settings_dialog.py .\settings.ui
 
 # Pyinstaller
-# pyinstaller -n Moodle_Sync_Aggregate_20220111v1 --onefile main_app.py
+# pyinstaller -n Moodle_Sync_Aggregate --onefile --windowed main_app.py
 
 # Nice to Have
 # TODO Get Students Jahrgang from moodle Group
