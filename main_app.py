@@ -21,16 +21,6 @@ from settings_dialog import Ui_Dialog
 # Pyinstaller
 # pyinstaller -n Moodle_Sync_Aggregate --onefile --windowed main_app.py
 
-# Nice to Have
-# TODO Get Students Jahrgang from moodle Group
-# TODO Add Scrollbar to Modules List
-# TODO Startup Config (export filepath, ...)
-# TODO Format exported excel (colum size,...)
-# TODO Failed to load Dialog
-
-# Next Steps for Core Functionality
-# Done
-
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -61,6 +51,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.move(self.settings.value("pos", QPoint(50, 50)))
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
+        self.use_studentlist = self.settings.value("use_studentlist", False) == 'true'
 
         # Startup
         self.url = self.settings.value("url", None)
@@ -77,9 +68,9 @@ class Window(QMainWindow, Ui_MainWindow):
             self.moodle = MoodleSync(self.url, self.key)
             self.download_courses()
         else:
-            self.failed_to_load("Moodle URL/Key not defined. Please check Settings.")
+            self.fail_to_load("Moodle URL/Key not defined. Please check Settings.")
 
-    def failed_to_load(self, message, error=None):
+    def fail_to_load(self, message, error=None):
         print(message, error)
         msg_box = QMessageBox(QMessageBox.Information, "Fehler", message)
         msg_box.exec_()
@@ -94,9 +85,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.set_courses()
                 self.download_pushButton.setEnabled(self.all_none_checkBox.checkState())
             except Exception as e:
-                self.failed_to_load("Failed to load courses. Please check Settings.", e)
+                self.fail_to_load("Failed to load courses. Please check Settings.", e)
         else:
-            self.failed_to_load("Moodle URL/Key not defined. Please check Settings.")
+            self.fail_to_load("Moodle URL/Key not defined. Please check Settings.")
 
     def set_courses(self):
         self.courselistWidget.blockSignals(True)
@@ -109,12 +100,11 @@ class Window(QMainWindow, Ui_MainWindow):
         self.current_course = course.text()
 
     def download_grades(self):
-        try:
-            self.student_list = pd.read_csv(self.student_list_path)
-        except Exception as e:
-            print(
-                "Failed to load Student List CSV. Please check Settings.",
-                e)
+        if self.use_studentlist:
+            try:
+                self.student_list = pd.read_csv(self.student_list_path)
+            except Exception as e:
+                print("Failed to load Student List CSV. Please check Settings.", e)
 
         if self.current_course is None:
             self.courselistWidget.setCurrentRow(0)
@@ -136,6 +126,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.grades = self.grades.replace("EK überwiegend", "EKü")
         self.grades = self.grades.replace("vollständig erfüllt", "v")
         self.grades = self.grades.replace("überwiegend erfüllt", "ü")
+
+        grad_df = self.grades.replace("-", 0)
+        grad_df = grad_df.apply(lambda s: pd.to_numeric(s, errors='coerce').notnull().all())
+        for module, is_num in grad_df.items():
+            if is_num:
+                self.grades[module] = self.grades[module].replace("-", 0)
+                self.grades[module] = self.grades[module].astype('int64')  # TODO autodetect numbers work in progress
 
         if self.student_list is not None:
             self.grades[['a', 'b', 'c']] = self.grades['Schüler'].str.lower().str.split(' ', 2, expand=True)
@@ -203,8 +200,8 @@ class Window(QMainWindow, Ui_MainWindow):
             self.settings.setValue("dir", file[:file.rfind("/")])  # TODO test on mac if sep is also "/" (maybe "\")
 
     def open_settings(self):
-        settings = SettingsDlg(self, url=self.settings.value("url", ""), key=self.settings.value("key", ""),
-                               studentlist=self.student_list_path)
+        settings = SettingsDlg(self, use_studentlist=self.use_studentlist, url=self.settings.value("url", ""),
+                               key=self.settings.value("key", ""), studentlist=self.student_list_path)
         if settings.exec():
             self.url = settings.ui.url_lineEdit.text()
             self.key = settings.ui.key_lineEdit.text()
@@ -212,6 +209,8 @@ class Window(QMainWindow, Ui_MainWindow):
             self.settings.setValue("url", self.url)
             self.settings.setValue("key", self.key)
             self.settings.setValue("studentlist", self.student_list_path)
+            self.use_studentlist = settings.ui.checkBox.isChecked()
+            self.settings.setValue("use_studentlist", self.use_studentlist)
         self.login()
 
     def all_none_checkbox_changed(self):
@@ -226,16 +225,22 @@ class Window(QMainWindow, Ui_MainWindow):
 
 
 class SettingsDlg(QDialog):
-    def __init__(self, parent=None, url=None, key=None, studentlist=None):
+    def __init__(self, parent=None, url=None, key=None, studentlist=None, use_studentlist=False):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
+        self.ui.checkBox.setChecked(use_studentlist)
+        self.ui.studentlist_lineEdit.setEnabled(use_studentlist)
+        self.ui.checkBox.stateChanged.connect(self.checkbox_changed)
         if url:
             self.ui.url_lineEdit.setText(url)
         if key:
             self.ui.key_lineEdit.setText(key)
         if studentlist:
             self.ui.studentlist_lineEdit.setText(studentlist)
+
+    def checkbox_changed(self):
+        self.ui.studentlist_lineEdit.setEnabled(self.ui.checkBox.isChecked())
 
 
 if __name__ == '__main__':
