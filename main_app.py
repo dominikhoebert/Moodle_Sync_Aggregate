@@ -1,16 +1,21 @@
 import sys
 import datetime
+from locale import atof, setlocale, LC_NUMERIC
 
 import pandas as pd
 from openpyxl import Workbook, worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
+from openpyxl.formatting import Rule
+from openpyxl.styles import Font, PatternFill, Border
+from openpyxl.styles.differential import DifferentialStyle
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QCheckBox, QFileDialog
 from PyQt5.QtCore import QSettings, QPoint, QSize
 
 from main_window import Ui_MainWindow
 from moodle_sync import MoodleSync
 from settings_dialog import Ui_Dialog
+from conditional_formating import conditional_formatting_GEK
 
 
 # Translate .ui to .py
@@ -20,6 +25,28 @@ from settings_dialog import Ui_Dialog
 
 # Pyinstaller
 # pyinstaller -n Moodle_Sync_Aggregate --onefile --windowed main_app.py
+
+def list_to_float(list):
+    return_list = []
+    for item in list:
+        temp_item = item
+        try:
+            temp_item = float(atof(item))
+        except (ValueError, TypeError):
+            pass
+        return_list.append(temp_item)
+    return return_list
+
+
+def filter_blank(list):
+    return_list = []
+    for i, item in enumerate(list):
+        if item == '':
+            return_list.append(f"Spalte{i}")
+        else:
+            return_list.append(item)
+    return return_list
+
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -127,13 +154,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.grades = self.grades.replace("vollständig erfüllt", "v")
         self.grades = self.grades.replace("überwiegend erfüllt", "ü")
 
-        grad_df = self.grades.replace("-", 0)
-        grad_df = grad_df.apply(lambda s: pd.to_numeric(s, errors='coerce').notnull().all())
-        for module, is_num in grad_df.items():
-            if is_num:
-                self.grades[module] = self.grades[module].replace("-", 0)
-                self.grades[module] = self.grades[module].astype('int64')  # TODO autodetect numbers work in progress
-
         if self.student_list is not None:
             self.grades[['a', 'b', 'c']] = self.grades['Schüler'].str.lower().str.split(' ', 2, expand=True)
             self.grades['Name2'] = self.grades['a'] + ' ' + self.grades['b']
@@ -144,6 +164,7 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             self.grades["Klasse"] = ""
 
+        self.grades.columns = filter_blank(self.grades.columns)
         self.grades = self.grades[["Schüler", "Klasse", "Gruppen", "Email"] + list(self.grades.columns)[1:-3]]
         self.create_modules_list()
 
@@ -165,8 +186,8 @@ class Window(QMainWindow, Ui_MainWindow):
         wb = Workbook()
         ws = wb.active
 
-        for r in dataframe_to_rows(self.grades, index=False, header=True):
-            ws.append(r)
+        for row in dataframe_to_rows(self.grades, index=False, header=True):
+            ws.append(list_to_float(row))
 
         for i, cb in enumerate(self.checkboxes):
             if cb.checkState() == 0:
@@ -189,6 +210,17 @@ class Window(QMainWindow, Ui_MainWindow):
         tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
                                                             showColumnStripes=False)
         ws.add_table(tab)
+
+        for cell in ws[1]:
+            module = str(cell.value)
+            if module.startswith("GK"):
+                conditional_formatting_GEK(ws, f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}", 'GK')
+            elif module.startswith("EK"):
+                conditional_formatting_GEK(ws, f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}", 'EK')
+            elif module.startswith("GEK"):
+                conditional_formatting_GEK(ws, f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}", 'GEK')
+            elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
+                pass
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()
@@ -244,6 +276,7 @@ class SettingsDlg(QDialog):
 
 
 if __name__ == '__main__':
+    setlocale(LC_NUMERIC, '')
     app = QApplication(sys.argv)
     win = Window()
     win.show()
