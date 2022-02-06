@@ -42,6 +42,16 @@ def conditional_formatting_GEK(ws, range, type):
                                                   formula=text_formula('-', range)))
 
 
+def conditional_formatting_points(ws, range, start, end):
+    ws.conditional_formatting.add(range,
+                                  CellIsRule(operator='lessThan', formula=[start], stopIfTrue=False,
+                                             fill=PatternFill(bgColor="F8696B")))
+    ws.conditional_formatting.add(range,
+                                  ColorScaleRule(start_type='num', start_value=start, start_color='FBAA77',
+                                                 mid_type='percent', mid_value=70, mid_color='FFEB84',
+                                                 end_type='num', end_value=end, end_color='63BE7B'))
+
+
 if __name__ == '__main__':
     wb = Workbook()
     ws = wb.active
@@ -50,4 +60,4 @@ if __name__ == '__main__':
     conditional_formatting_GEK(ws, 'B2:B5', 'EK')
     conditional_formatting_GEK(ws, 'C2:C7', 'GEK')
 
-    wb.save("test2.xlsx")
+    wb.save("formated.xlsx")

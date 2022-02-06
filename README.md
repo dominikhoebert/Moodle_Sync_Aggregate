@@ -47,7 +47,7 @@ Token benötigt.
 - ~~bedingte formatierung für EKv/EKü~~
 - ~~bedingte formatierung rot für GK wenn -/n~~
 - ~~bedingte formatierung für v/ü wenn EK~~
-- bedingte formatierung für Wiederholung
+- ~~bedingte formatierung für Wiederholung~~
 - zusammenfassen der Kompetenzbereiche abhängig von Modulnummer
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download Progress Bar (Multithreading?)

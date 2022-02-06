@@ -15,7 +15,7 @@ from PyQt5.QtCore import QSettings, QPoint, QSize
 from main_window import Ui_MainWindow
 from moodle_sync import MoodleSync
 from settings_dialog import Ui_Dialog
-from conditional_formating import conditional_formatting_GEK
+from conditional_formating import conditional_formatting_GEK, conditional_formatting_points
 
 
 # Translate .ui to .py
@@ -213,14 +213,18 @@ class Window(QMainWindow, Ui_MainWindow):
 
         for cell in ws[1]:
             module = str(cell.value)
+            cell_range = f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}"
             if module.startswith("GK"):
-                conditional_formatting_GEK(ws, f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}", 'GK')
+                conditional_formatting_GEK(ws, cell_range, 'GK')
             elif module.startswith("EK"):
-                conditional_formatting_GEK(ws, f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}", 'EK')
+                conditional_formatting_GEK(ws, cell_range, 'EK')
             elif module.startswith("GEK"):
-                conditional_formatting_GEK(ws, f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}", 'GEK')
+                conditional_formatting_GEK(ws, cell_range, 'GEK')
             elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
-                pass
+                for cx in ws[cell.column_letter]:
+                    if cx.value == '-':
+                        cx.value = 0.0
+                conditional_formatting_points(ws, cell_range, start=6, end=10)  # TODO add global settings or per module
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()
