@@ -52,6 +52,8 @@ Token benötigt.
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download Progress Bar (Multithreading?)
 - Notenberechnung aus Notenschlüssel
+- Download multiple and export into one file
+- Bedingte Formatierung für Kompetenzbereiche
 
 Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
 

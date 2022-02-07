@@ -79,6 +79,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
         self.use_studentlist = self.settings.value("use_studentlist", False) == 'true'
+        self.create_competence_columns = self.settings.value('create_competence_columns', True)
 
         # Startup
         self.url = self.settings.value("url", None)
@@ -166,6 +167,40 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.grades.columns = filter_blank(self.grades.columns)
         self.grades = self.grades[["Schüler", "Klasse", "Gruppen", "Email"] + list(self.grades.columns)[1:-3]]
+
+        if self.create_competence_columns:
+            competences = {}
+            for module in list(self.grades.columns):
+                if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email']:
+                    s = module.split(' ')[0].split('K')
+                    if len(s) > 1:
+                        module_type = s[0]
+                        module_number = s[1]
+                        if module_type in ['G', 'GE'] and len(module_number) >= 3:
+                            competence = module_number[:2]
+                            if competence in competences:
+                                competences[competence].append(module)
+                            else:
+                                competences[competence] = [module]
+
+            module_names = {'21': "2.1 Elektrotechnik und Elektronik", '22': "2.2 Textverarbeitungsprogramme",
+                            '23': "2.3 Boolsche Algebra", '24': "2.4 Tabellenkalkulationsprogramme",
+                            '41': "4.1 Analoge Signale", '42': "4.2 Sensoren", '43': "4.3 Aufgaben des Betriebssystems",
+                            '44': "4.4 Betriebssysteme Anwendung", '61': "6.1 Datenerfassung",
+                            '62': "6.2 Systemanbindung", '63': "6.3 Serverinstallation", '64': "6.4 Servermanagement",
+                            '65': "6.5 Virtualisierung"}
+
+            for competence, modules in competences.items():
+                competence_name = f"{competence[0]}.{competence[1]} Grundkompetenz"
+                if competence in module_names:
+                    competence_name = module_names[competence]
+                self.grades[competence_name] = ""
+                for num, module in enumerate(modules):
+                    if num == 0:
+                        self.grades[competence_name] += self.grades[module]
+                    else:
+                        self.grades[competence_name] += ";" + self.grades[module]
+
         self.create_modules_list()
 
     def create_modules_list(self):
