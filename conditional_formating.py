@@ -35,7 +35,7 @@ def conditional_formatting_GEK(ws, range, type):
                                                   formula=text_formula('v', range)))
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_eku,
                                                   formula=text_formula('ü', range)))
-    if type == 'GEK' or type == 'GK':
+    if type == 'GEK' or type == 'GK' or type == 'K':
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
                                                   formula=text_formula('n', range)))
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,

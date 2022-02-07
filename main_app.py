@@ -194,12 +194,12 @@ class Window(QMainWindow, Ui_MainWindow):
                 competence_name = f"{competence[0]}.{competence[1]} Grundkompetenz"
                 if competence in module_names:
                     competence_name = module_names[competence]
-                self.grades[competence_name] = ""
-                for num, module in enumerate(modules):
-                    if num == 0:
-                        self.grades[competence_name] += self.grades[module]
-                    else:
-                        self.grades[competence_name] += ";" + self.grades[module]
+                self.grades[competence_name] = '=K2 & ";" & L2' # TODO working on
+                # for num, module in enumerate(modules):
+                #     if num == 0:
+                #         self.grades[competence_name] += self.grades[module]
+                #     else:
+                #         self.grades[competence_name] += ";" + self.grades[module]
 
         self.create_modules_list()
 
@@ -260,6 +260,8 @@ class Window(QMainWindow, Ui_MainWindow):
                     if cx.value == '-':
                         cx.value = 0.0
                 conditional_formatting_points(ws, cell_range, start=6, end=10)  # TODO add global settings or per module
+            elif module[1] == '.':  # if Kompetenz
+                conditional_formatting_GEK(ws, cell_range, 'K')
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()
