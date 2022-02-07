@@ -48,13 +48,16 @@ Token benötigt.
 - ~~bedingte formatierung rot für GK wenn -/n~~
 - ~~bedingte formatierung für v/ü wenn EK~~
 - ~~bedingte formatierung für Wiederholung~~
-- zusammenfassen der Kompetenzbereiche abhängig von Modulnummer
-- Kompetenzbereiche Formular intead of python calculated
+- ~~zusammenfassen der Kompetenzbereiche abhängig von Modulnummer~~
+- ~~Kompetenzbereiche Formular instead of python calculated~~
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download Progress Bar (Multithreading?)
 - Notenberechnung aus Notenschlüssel
+- Bedingte Formatierung für Notenvorschlag
 - Download multiple and export into one file
-- Bedingte Formatierung für Kompetenzbereiche
+- ~~Bedingte Formatierung für Kompetenzbereiche~~
+- Bedingte Formatierung Gruppe != Klasse
+- Sort Gruppe/Klasse before Name
 
 Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
 

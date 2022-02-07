@@ -48,6 +48,12 @@ def filter_blank(list):
     return return_list
 
 
+def get_column_for_module(ws, module):
+    for cell in ws[1]:
+        if module == cell.value:
+            return cell.column_letter
+
+
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -70,6 +76,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.grades = None  # Dataframe of Student name, Modules and Grades
         self.checkboxes = None  # List of Checkboxes for Modules
         self.student_list = None  # Dataframe Name Klasse
+        self.competences = None  # Dict competence number as string eg. '21' (for 2.1) to Module Names
+        self.competence_helper = None  # Dict competence_name to competence number
 
         # Config
         self.settings = QSettings('TGM', 'Moodle_Sync_Grading')
@@ -169,7 +177,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.grades = self.grades[["Schüler", "Klasse", "Gruppen", "Email"] + list(self.grades.columns)[1:-3]]
 
         if self.create_competence_columns:
-            competences = {}
+            self.competences = {}
             for module in list(self.grades.columns):
                 if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email']:
                     s = module.split(' ')[0].split('K')
@@ -177,11 +185,11 @@ class Window(QMainWindow, Ui_MainWindow):
                         module_type = s[0]
                         module_number = s[1]
                         if module_type in ['G', 'GE'] and len(module_number) >= 3:
-                            competence = module_number[:2]
-                            if competence in competences:
-                                competences[competence].append(module)
+                            competence_number = module_number[:2]
+                            if competence_number in self.competences:
+                                self.competences[competence_number].append(module)
                             else:
-                                competences[competence] = [module]
+                                self.competences[competence_number] = [module]
 
             module_names = {'21': "2.1 Elektrotechnik und Elektronik", '22': "2.2 Textverarbeitungsprogramme",
                             '23': "2.3 Boolsche Algebra", '24': "2.4 Tabellenkalkulationsprogramme",
@@ -190,11 +198,13 @@ class Window(QMainWindow, Ui_MainWindow):
                             '62': "6.2 Systemanbindung", '63': "6.3 Serverinstallation", '64': "6.4 Servermanagement",
                             '65': "6.5 Virtualisierung"}
 
-            for competence, modules in competences.items():
-                competence_name = f"{competence[0]}.{competence[1]} Grundkompetenz"
-                if competence in module_names:
-                    competence_name = module_names[competence]
-                self.grades[competence_name] = '=K2 & ";" & L2' # TODO working on
+            self.competence_helper = {}
+            for competence_number, modules in self.competences.items():
+                competence_name = f"{competence_number[0]}.{competence_number[1]} Grundkompetenz"
+                if competence_number in module_names:
+                    competence_name = module_names[competence_number]
+                self.grades[competence_name] = '='
+                self.competence_helper[competence_name] = competence_number
                 # for num, module in enumerate(modules):
                 #     if num == 0:
                 #         self.grades[competence_name] += self.grades[module]
@@ -262,6 +272,11 @@ class Window(QMainWindow, Ui_MainWindow):
                 conditional_formatting_points(ws, cell_range, start=6, end=10)  # TODO add global settings or per module
             elif module[1] == '.':  # if Kompetenz
                 conditional_formatting_GEK(ws, cell_range, 'K')
+                for c_cell in ws[cell.column_letter]:
+                    if c_cell.value == '=':
+                        c_cell.value = '=' + ' & ";" & '.join(
+                            [f"{get_column_for_module(ws, c)}{c_cell.row}" for c in
+                             self.competences[self.competence_helper[module]]])
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()
@@ -270,7 +285,7 @@ class Window(QMainWindow, Ui_MainWindow):
         file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
         if file:
             wb.save(file)
-            self.settings.setValue("dir", file[:file.rfind("/")])  # TODO test on mac if sep is also "/" (maybe "\")
+            self.settings.setValue("dir", file[:file.rfind("/")])
 
     def open_settings(self):
         settings = SettingsDlg(self, use_studentlist=self.use_studentlist, url=self.settings.value("url", ""),
