@@ -90,7 +90,8 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
         self.use_studentlist = self.settings.value("use_studentlist", False) == 'true'
-        self.create_competence_columns = self.settings.value('create_competence_columns', True)
+        self.create_competence_columns = self.settings.value('create_competence_columns', True)  # TODO add settings
+        self.mark_suggestion = self.settings.value('mark_suggestion', True)  # TODO add settings
 
         # Startup
         self.url = self.settings.value("url", None)
@@ -203,11 +204,10 @@ class Window(QMainWindow, Ui_MainWindow):
                     competence_name = module_names[competence_number]
                 self.grades[competence_name] = '='
                 self.competence_helper[competence_name] = competence_number
-                # for num, module in enumerate(modules):
-                #     if num == 0:
-                #         self.grades[competence_name] += self.grades[module]
-                #     else:
-                #         self.grades[competence_name] += ";" + self.grades[module]
+
+        if self.mark_suggestion:
+            self.grades["Punkte"] = '='
+            self.grades["Notenvorschlag"] = '='
 
         self.create_modules_list()
 
@@ -217,7 +217,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.tasks_verticalLayout.itemAt(i).widget().setParent(None)
 
         for module in list(self.grades.columns):
-            if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email']:
+            if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email', 'Punkte']:
                 cb = QCheckBox(module, self)
                 cb.setChecked(True)
                 self.tasks_verticalLayout.addWidget(cb)
@@ -254,20 +254,24 @@ class Window(QMainWindow, Ui_MainWindow):
                                                             showColumnStripes=False)
         ws.add_table(tab)
 
+        comp_dict = {'GK': [], 'GEK': [], 'EK': []}
         for cell in ws[1]:
             module = str(cell.value)
             cell_range = f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}"
             if module.startswith("GK"):
                 conditional_formatting_GEK(ws, cell_range, 'GK')
+                comp_dict['GK'].append(cell.column_letter)
             elif module.startswith("EK"):
                 conditional_formatting_GEK(ws, cell_range, 'EK')
+                comp_dict['EK'].append(cell.column_letter)
             elif module.startswith("GEK"):
                 conditional_formatting_GEK(ws, cell_range, 'GEK')
+                comp_dict['GEK'].append(cell.column_letter)
             elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
                 for cx in ws[cell.column_letter]:
                     if cx.value == '-':
                         cx.value = 0.0
-                conditional_formatting_points(ws, cell_range, start=6, end=10)  # TODO add global settings or per module
+                conditional_formatting_points(ws, cell_range, start=6, end=10)  # TODO these values to Excel
             elif module[1] == '.':  # if Kompetenz
                 conditional_formatting_GEK(ws, cell_range, 'K')
                 for c_cell in ws[cell.column_letter]:
@@ -275,6 +279,23 @@ class Window(QMainWindow, Ui_MainWindow):
                         c_cell.value = '=' + ' & ";" & '.join(
                             [f"{get_column_for_module(ws, c)}{c_cell.row}" for c in
                              self.competences[self.competence_helper[module]]])
+            elif module == 'Punkte' and self.mark_suggestion:
+                for c_cell in ws[cell.column_letter]:
+                    if c_cell.value == '=':
+                        for module_type, module_letter_list in comp_dict.items():
+                            for module_letter in module_letter_list:
+                                affected_cell = f"SUMPRODUCT(--EXACT({module_letter}{c_cell.row}"
+                                c_cell.value += f'{affected_cell},"GKü"))*-1+'
+                                c_cell.value += f'{affected_cell},"EKü"))+'
+                                c_cell.value += f'{affected_cell},"EKv"))*2+'
+                                if module_type == 'GK':
+                                    c_cell.value += f'{affected_cell},"ü"))*-1+'
+                                elif module_type == 'GEK':
+                                    c_cell.value += f'{affected_cell},"ü"))*-1+'
+                                elif module_type == 'EK':
+                                    c_cell.value += f'{affected_cell},"ü"))+'
+                                    c_cell.value += f'{affected_cell},"v"))*2+'
+                        c_cell.value = c_cell.value[:-1]
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()
