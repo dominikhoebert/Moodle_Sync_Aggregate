@@ -6,9 +6,6 @@ import pandas as pd
 from openpyxl import Workbook, worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
-from openpyxl.formatting import Rule
-from openpyxl.styles import Font, PatternFill, Border
-from openpyxl.styles.differential import DifferentialStyle
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QCheckBox, QFileDialog
 from PyQt5.QtCore import QSettings, QPoint, QSize
 
@@ -26,9 +23,9 @@ from conditional_formating import conditional_formatting_GEK, conditional_format
 # Pyinstaller
 # pyinstaller -n Moodle_Sync_Aggregate --onefile --windowed main_app.py
 
-def list_to_float(list):
+def list_to_float(grade_list):
     return_list = []
-    for item in list:
+    for item in grade_list:
         temp_item = item
         try:
             temp_item = float(atof(item))
@@ -38,9 +35,9 @@ def list_to_float(list):
     return return_list
 
 
-def filter_blank(list):
+def filter_blank(grade_list):
     return_list = []
-    for i, item in enumerate(list):
+    for i, item in enumerate(grade_list):
         if item == '':
             return_list.append(f"Spalte{i}")
         else:
@@ -52,6 +49,12 @@ def get_column_for_module(ws, module):
     for cell in ws[1]:
         if module == cell.value:
             return cell.column_letter
+
+
+def fail_to_load(message, error=None):
+    print(message, error)
+    msg_box = QMessageBox(QMessageBox.Information, "Fehler", message)
+    msg_box.exec_()
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -104,12 +107,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.moodle = MoodleSync(self.url, self.key)
             self.download_courses()
         else:
-            self.fail_to_load("Moodle URL/Key not defined. Please check Settings.")
-
-    def fail_to_load(self, message, error=None):
-        print(message, error)
-        msg_box = QMessageBox(QMessageBox.Information, "Fehler", message)
-        msg_box.exec_()
+            fail_to_load("Moodle URL/Key not defined. Please check Settings.")
 
     def get_course_id(self, name):
         return self.courses[name]['id']
@@ -121,9 +119,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.set_courses()
                 self.download_pushButton.setEnabled(self.all_none_checkBox.checkState())
             except Exception as e:
-                self.fail_to_load("Failed to load courses. Please check Settings.", e)
+                fail_to_load("Failed to load courses. Please check Settings.", e)
         else:
-            self.fail_to_load("Moodle URL/Key not defined. Please check Settings.")
+            fail_to_load("Moodle URL/Key not defined. Please check Settings.")
 
     def set_courses(self):
         self.courselistWidget.blockSignals(True)

@@ -58,6 +58,7 @@ Token benötigt.
 - ~~Bedingte Formatierung für Kompetenzbereiche~~
 - Bedingte Formatierung Gruppe != Klasse
 - Sort Gruppe/Klasse before Name
+- Kompetenzzähler
 
 Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
 
