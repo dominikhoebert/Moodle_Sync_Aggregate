@@ -30,9 +30,6 @@ Token benötigt.
 
 ## TODOs
 
-- Test: Sort Gruppe/Klasse before Name
-- Test: Bedingte Formatierung Gruppe != Klasse
-- Test: Schwellwerte für bedingte Formatierung in Excel
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download multiple and export into one file
 - Download Progress Bar (Multithreading?)
@@ -40,6 +37,9 @@ Token benötigt.
 - Login to Moodle using Username and Password
 - Kompetenzzähler?
 - andere Berechnungen?
+- ~~Schwellwerte für bedingte Formatierung in Excel~~
+- ~~Sort Gruppe/Klasse before Name~~
+- ~~Bedingte Formatierung Gruppe != Klasse~~
 - ~~Error Messages~~
 - ~~no classes without studentlist~~
 - ~~include email adress~~

@@ -155,7 +155,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.grades = self.grades.drop(['userid', 'id', 'fullname'], axis=1)
         self.grades = self.grades.rename(columns={'groups': 'Gruppen', 'email': 'Email'})
 
-        self.grades = self.grades.sort_values(by=['Gruppe', 'Schüler'])  # TODO Test
+        self.grades = self.grades.sort_values(by=['Gruppen', 'Schüler'])
 
         self.grades = self.grades.replace("nicht erfüllt", "n")
         self.grades = self.grades.replace("Nicht erfüllt", "n")
@@ -258,10 +258,11 @@ class Window(QMainWindow, Ui_MainWindow):
                                                             showColumnStripes=False)
         ws.add_table(tab)
 
+        max_row = ws.max_row
         comp_dict = {'GK': [], 'GEK': [], 'EK': []}
         for cell in ws[1]:
             module = str(cell.value)
-            cell_range = f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}"
+            cell_range = f"{cell.column_letter}2:{cell.column_letter}{max_row}"
             if module.startswith("GK"):
                 custom_conditional_formatting(ws, cell_range, 'GK')
                 comp_dict['GK'].append(cell.column_letter)
@@ -276,14 +277,14 @@ class Window(QMainWindow, Ui_MainWindow):
                     if cx.value == '-':
                         cx.value = 0.0
                 custom_conditional_formatting(ws, cell_range, type='points',
-                                              start=f'${cell.column_letter}${ws.max_row + 2}',
-                                              end=f'${cell.column_letter}${ws.max_row + 3}')  # TODO Test
-                ws[f'A{ws.max_row + 2}'].value = 'Bestehungsgrenze'
-                ws[f'A{ws.max_row + 2}'].font = Font(bold=True)
-                ws[f'A{ws.max_row + 3}'].value = 'Maximal erreichbar'
-                ws[f'A{ws.max_row + 3}'].font = Font(bold=True)
-                ws[f'{cell.column_letter}{ws.max_row + 2}'].value = 6
-                ws[f'{cell.column_letter}{ws.max_row + 3}'].value = 10
+                                              start=f'${cell.column_letter}${max_row + 2}',
+                                              end=f'${cell.column_letter}${max_row + 3}')
+                ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
+                ws[f'A{max_row + 2}'].font = Font(bold=True)
+                ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
+                ws[f'A{max_row + 3}'].font = Font(bold=True)
+                ws[f'{cell.column_letter}{max_row + 2}'].value = 6
+                ws[f'{cell.column_letter}{max_row + 3}'].value = 10
             elif module[1] == '.':  # if Kompetenz
                 custom_conditional_formatting(ws, cell_range, 'K')
                 for c_cell in ws[cell.column_letter]:
@@ -308,7 +309,6 @@ class Window(QMainWindow, Ui_MainWindow):
                                     c_cell.value += f'{affected_cell},"ü"))+'
                                     c_cell.value += f'{affected_cell},"v"))*2+'
                         c_cell.value = c_cell.value[:-1]
-                        c_cell.font = Font(bold=True)  # TODO Test
                 custom_conditional_formatting(ws, cell_range, type='scale')
             elif module == 'Notenvorschlag' and self.mark_suggestion:
                 sc = ws.max_column + 3  # start column
@@ -352,13 +352,15 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 for c_cell in ws[cell.column_letter]:
                     if c_cell.value == '=':
+                        c_cell.font = Font(bold=True)
                         pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
                         cf = ' & '.join([f'{letter}{c_cell.row}' for letter in competences_letters_list])
                         c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,' \
                                                               f'{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
                 custom_conditional_formatting(ws, cell_range, type='marks')
-            elif module == 'Gruppe':
-                custom_conditional_formatting(ws, cell_range, type='group')  # TODO Test
+
+            elif module == 'Gruppen':
+                custom_conditional_formatting(ws, cell_range, type='group')
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()
@@ -414,7 +416,7 @@ class SettingsDlg(QDialog):
 
 
 if __name__ == '__main__':
-    setlocale(LC_NUMERIC, '')
+    setlocale(LC_NUMERIC, 'de_DE')
     app = QApplication(sys.argv)
     win = Window()
     win.show()
