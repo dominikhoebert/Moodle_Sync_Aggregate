@@ -9,7 +9,7 @@ def text_formula(search_for, range):
     return [f'NOT(ISERROR(SEARCH("{search_for}",{range[:2]})))']
 
 
-def conditional_formatting_GEK(ws, range, type):
+def custom_conditional_formatting(ws, range, type, start=6, end=10):
     style_ekv = DifferentialStyle(font=Font(color="006100"), fill=PatternFill(bgColor="C6EFCE"))
     style_eku = DifferentialStyle(font=Font(color="006100"), fill=PatternFill(bgColor="C4D79B"))
     style_gkv = DifferentialStyle(font=Font(color="9C5700"), fill=PatternFill(bgColor="FFEB9C"))
@@ -40,24 +40,27 @@ def conditional_formatting_GEK(ws, range, type):
                                                   formula=text_formula('n', range)))
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
                                                   formula=text_formula('-', range)))
+    if type == 'marks':
+        ws.conditional_formatting.add(range, ColorScaleRule(start_type='num', start_value=1, start_color='63BE7B',
+                                                            mid_type='percent', mid_value=50, mid_color='FFEB84',
+                                                            end_type='num', end_value=5, end_color='f8696b'))
 
-
-def conditional_formatting_points(ws, range, start, end):
-    ws.conditional_formatting.add(range,
-                                  CellIsRule(operator='lessThan', formula=[start], stopIfTrue=False,
-                                             fill=PatternFill(bgColor="F8696B")))
-    ws.conditional_formatting.add(range,
-                                  ColorScaleRule(start_type='num', start_value=start, start_color='FBAA77',
-                                                 mid_type='percent', mid_value=70, mid_color='FFEB84',
-                                                 end_type='num', end_value=end, end_color='63BE7B'))
+    if type == 'points':
+        ws.conditional_formatting.add(range,
+                                      CellIsRule(operator='lessThan', formula=[start], stopIfTrue=False,
+                                                 fill=PatternFill(bgColor="F8696B")))
+        ws.conditional_formatting.add(range,
+                                      ColorScaleRule(start_type='num', start_value=start, start_color='FBAA77',
+                                                     mid_type='percent', mid_value=70, mid_color='FFEB84',
+                                                     end_type='num', end_value=end, end_color='63BE7B'))
 
 
 if __name__ == '__main__':
     wb = Workbook()
     ws = wb.active
 
-    conditional_formatting_GEK(ws, 'A2:A5', 'GK')
-    conditional_formatting_GEK(ws, 'B2:B5', 'EK')
-    conditional_formatting_GEK(ws, 'C2:C7', 'GEK')
+    custom_conditional_formatting(ws, 'A2:A5', 'GK')
+    custom_conditional_formatting(ws, 'B2:B5', 'EK')
+    custom_conditional_formatting(ws, 'C2:C7', 'GEK')
 
     wb.save("formated.xlsx")

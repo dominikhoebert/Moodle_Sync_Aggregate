@@ -12,7 +12,7 @@ from PyQt5.QtCore import QSettings, QPoint, QSize
 from main_window import Ui_MainWindow
 from moodle_sync import MoodleSync
 from settings_dialog import Ui_Dialog
-from conditional_formating import conditional_formatting_GEK, conditional_formatting_points
+from conditional_formating import custom_conditional_formatting
 
 
 # Translate .ui to .py
@@ -259,21 +259,22 @@ class Window(QMainWindow, Ui_MainWindow):
             module = str(cell.value)
             cell_range = f"{cell.column_letter}2:{cell.column_letter}{ws.max_row}"
             if module.startswith("GK"):
-                conditional_formatting_GEK(ws, cell_range, 'GK')
+                custom_conditional_formatting(ws, cell_range, 'GK')
                 comp_dict['GK'].append(cell.column_letter)
             elif module.startswith("EK"):
-                conditional_formatting_GEK(ws, cell_range, 'EK')
+                custom_conditional_formatting(ws, cell_range, 'EK')
                 comp_dict['EK'].append(cell.column_letter)
             elif module.startswith("GEK"):
-                conditional_formatting_GEK(ws, cell_range, 'GEK')
+                custom_conditional_formatting(ws, cell_range, 'GEK')
                 comp_dict['GEK'].append(cell.column_letter)
             elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
                 for cx in ws[cell.column_letter]:
                     if cx.value == '-':
                         cx.value = 0.0
-                conditional_formatting_points(ws, cell_range, start=6, end=10)  # TODO these values to Excel
+                custom_conditional_formatting(ws, cell_range, type='points', start=6,
+                                              end=10)  # TODO these values to Excel
             elif module[1] == '.':  # if Kompetenz
-                conditional_formatting_GEK(ws, cell_range, 'K')
+                custom_conditional_formatting(ws, cell_range, 'K')
                 for c_cell in ws[cell.column_letter]:
                     if c_cell.value == '=':
                         c_cell.value = '=' + ' & ";" & '.join(
@@ -296,15 +297,60 @@ class Window(QMainWindow, Ui_MainWindow):
                                     c_cell.value += f'{affected_cell},"ü"))+'
                                     c_cell.value += f'{affected_cell},"v"))*2+'
                         c_cell.value = c_cell.value[:-1]
+            elif module == 'Notenvorschlag' and self.mark_suggestion:
+                sc = ws.max_column + 3  # start column
 
-        directory = self.settings.value('dir', "")
-        ct = datetime.datetime.now()
-        filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
+                marks_table = [['Note', 'Schlüssel', 'Anz.', 'P', '', 'Komp.', 'Anz.'],
+                               [5, '', '', '', '', 'GK', len(comp_dict['GK'])],
+                               [4, 'alle GK mind. ü', f'={get_column_letter(sc + 6)}2+{get_column_letter(sc + 6)}3',
+                                f'={get_column_letter(sc + 2)}3*-1', '*', 'GEK', len(comp_dict['GEK'])],
+                               [3, 'mind. GKv', 6, f'={get_column_letter(sc + 2)}4-{get_column_letter(sc + 2)}3', '',
+                                'EK', len(comp_dict['EK'])],
+                               [2, 'mind. EKü', 6, f'={get_column_letter(sc + 2)}5', '', '', ''],
+                               [1, 'mind. EKv', 6, f'={get_column_letter(sc + 2)}6*2', '', '', '']]
 
-        file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
-        if file:
-            wb.save(file)
-            self.settings.setValue("dir", file[:file.rfind("/")])
+                for row_number, rows in enumerate(marks_table):
+                    for column_number, cell_value in enumerate(rows):
+                        ws[f'{get_column_letter(sc + column_number)}{row_number + 1}'].value = cell_value
+
+                tab = worksheet.table.Table(displayName="Table2",
+                                            ref=f"{get_column_letter(sc)}1:{get_column_letter(sc + 3)}6")
+                tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium5", showRowStripes=False,
+                                                                    showColumnStripes=False)
+                ws.add_table(tab)
+
+                tab = worksheet.table.Table(displayName="Table3",
+                                            ref=f"{get_column_letter(sc + 5)}1:{get_column_letter(sc + 6)}4")
+                tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium6", showRowStripes=False,
+                                                                    showColumnStripes=False)
+                ws.add_table(tab)
+
+                marks_table_column_dimensions = [8, 15, 8, 5, 5, 10, 8]
+                for col, dim in enumerate(marks_table_column_dimensions):
+                    ws.column_dimensions[get_column_letter(sc + col)].width = dim
+
+                custom_conditional_formatting(ws, f'{get_column_letter(sc)}2:{get_column_letter(sc)}6', type='marks')
+
+                mcl = f'${get_column_letter(sc)}$'  # mark_column_letter
+                kpcl = f'${get_column_letter(sc + 3)}$'  # key_points_column_letter
+
+                competences_letters_list = [*comp_dict['GK'], *comp_dict['GEK']]
+                formular_string = '=_xlfn.IFS(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},'
+
+                for c_cell in ws[cell.column_letter]:
+                    if c_cell.value == '=':
+                        pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
+                        cf = ' & '.join([f'{letter}{c_cell.row}' for letter in competences_letters_list])
+                        c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
+
+                directory = self.settings.value('dir', "")
+                ct = datetime.datetime.now()
+                filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
+
+                file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
+                if file:
+                    wb.save(file)
+                self.settings.setValue("dir", file[:file.rfind("/")])
 
     def open_settings(self):
         settings = SettingsDlg(self, use_studentlist=self.use_studentlist, url=self.settings.value("url", ""),
