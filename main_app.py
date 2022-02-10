@@ -6,6 +6,7 @@ import pandas as pd
 from openpyxl import Workbook, worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font
 from PyQt5.QtWidgets import QApplication, QDialog, QMainWindow, QMessageBox, QCheckBox, QFileDialog
 from PyQt5.QtCore import QSettings, QPoint, QSize
 
@@ -89,7 +90,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.move(self.settings.value("pos", QPoint(50, 50)))
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
-        self.use_studentlist = self.settings.value("use_studentlist", False) == 'true'
+        self.use_studentlist = self.settings.value("use_studentlist",
+                                                   False)  # == 'true' TODO ? Working on mac like without ==true, tb checked on windows
         self.create_competence_columns = self.settings.value('create_competence_columns', True)  # TODO add settings
         self.mark_suggestion = self.settings.value('mark_suggestion', True)  # TODO add settings
 
@@ -152,6 +154,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.grades = self.grades.merge(user_info, how='left', left_on='userid', right_on='id')
         self.grades = self.grades.drop(['userid', 'id', 'fullname'], axis=1)
         self.grades = self.grades.rename(columns={'groups': 'Gruppen', 'email': 'Email'})
+
+        self.grades = self.grades.sort_values(by=['Gruppe', 'Schüler'])  # TODO Test
 
         self.grades = self.grades.replace("nicht erfüllt", "n")
         self.grades = self.grades.replace("Nicht erfüllt", "n")
@@ -271,8 +275,15 @@ class Window(QMainWindow, Ui_MainWindow):
                 for cx in ws[cell.column_letter]:
                     if cx.value == '-':
                         cx.value = 0.0
-                custom_conditional_formatting(ws, cell_range, type='points', start=6,
-                                              end=10)  # TODO these values to Excel
+                custom_conditional_formatting(ws, cell_range, type='points',
+                                              start=f'${cell.column_letter}${ws.max_row + 2}',
+                                              end=f'${cell.column_letter}${ws.max_row + 3}')  # TODO Test
+                ws[f'A{ws.max_row + 2}'].value = 'Bestehungsgrenze'
+                ws[f'A{ws.max_row + 2}'].font = Font(bold=True)
+                ws[f'A{ws.max_row + 3}'].value = 'Maximal erreichbar'
+                ws[f'A{ws.max_row + 3}'].font = Font(bold=True)
+                ws[f'{cell.column_letter}{ws.max_row + 2}'].value = 6
+                ws[f'{cell.column_letter}{ws.max_row + 3}'].value = 10
             elif module[1] == '.':  # if Kompetenz
                 custom_conditional_formatting(ws, cell_range, 'K')
                 for c_cell in ws[cell.column_letter]:
@@ -297,6 +308,8 @@ class Window(QMainWindow, Ui_MainWindow):
                                     c_cell.value += f'{affected_cell},"ü"))+'
                                     c_cell.value += f'{affected_cell},"v"))*2+'
                         c_cell.value = c_cell.value[:-1]
+                        c_cell.font = Font(bold=True)  # TODO Test
+                custom_conditional_formatting(ws, cell_range, type='scale')
             elif module == 'Notenvorschlag' and self.mark_suggestion:
                 sc = ws.max_column + 3  # start column
 
@@ -341,16 +354,20 @@ class Window(QMainWindow, Ui_MainWindow):
                     if c_cell.value == '=':
                         pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
                         cf = ' & '.join([f'{letter}{c_cell.row}' for letter in competences_letters_list])
-                        c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
+                        c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,' \
+                                                              f'{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
+                custom_conditional_formatting(ws, cell_range, type='marks')
+            elif module == 'Gruppe':
+                custom_conditional_formatting(ws, cell_range, type='group')  # TODO Test
 
-                directory = self.settings.value('dir', "")
-                ct = datetime.datetime.now()
-                filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
+        directory = self.settings.value('dir', "")
+        ct = datetime.datetime.now()
+        filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
 
-                file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
-                if file:
-                    wb.save(file)
-                self.settings.setValue("dir", file[:file.rfind("/")])
+        file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
+        if file:
+            wb.save(file)
+            self.settings.setValue("dir", file[:file.rfind("/")])
 
     def open_settings(self):
         settings = SettingsDlg(self, use_studentlist=self.use_studentlist, url=self.settings.value("url", ""),

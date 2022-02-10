@@ -16,7 +16,7 @@ Token benötigt.
 
 - Moodle Server URL
 - Moodle Authorization Key
-- Studenlist.csv *optional
+- Studentlist.csv *optional
 - (Certifi Zertifikat) only for run from source
 
 ### Python Dependencies
@@ -30,18 +30,25 @@ Token benötigt.
 
 ## TODOs
 
+- Test: Sort Gruppe/Klasse before Name
+- Test: Bedingte Formatierung Gruppe != Klasse
+- Test: Schwellwerte für bedingte Formatierung in Excel
+- Berechnung und Streichungen von WH/Wiederholung/SMÜ
+- Download multiple and export into one file
+- Download Progress Bar (Multithreading?)
+- Using LDAP for studentlist
+- Login to Moodle using Username and Password
+- Kompetenzzähler?
+- andere Berechnungen?
 - ~~Error Messages~~
 - ~~no classes without studentlist~~
 - ~~include email adress~~
-- Login to Moodle using Username and Password
 - ~~Studentlist standartpath to sharpoint~~
-- Using LDAP for studentlist?
 - ~~Get Students Jahrgang from moodle Group~~
 - ~~Add ALLE/KEINE Checkbox~~
 - ~~Startup Config (Splitter, elearning-URL, elearning-Key, export filepath, ...)~~
 - ~~Filename generation (timestamp-kursname-klassen.xlsx)~~
 - ~~Format exported excel~~
-- Berechnungen?
 - ~~Auto Numbers detection and format as number in excel~~
 - ~~Auto GK/EK detection~~
 - ~~bedingte formatierung für EKv/EKü~~
@@ -50,16 +57,9 @@ Token benötigt.
 - ~~bedingte formatierung für Wiederholung~~
 - ~~zusammenfassen der Kompetenzbereiche abhängig von Modulnummer~~
 - ~~Kompetenzbereiche Formular instead of python calculated~~
-- Berechnung und Streichungen von WH/Wiederholung/SMÜ
-- Download Progress Bar (Multithreading?)
-- Notenberechnung aus Notenschlüssel
-- Bedingte Formatierung für Notenvorschlag
-- Download multiple and export into one file
+- ~~Notenberechnung aus Notenschlüssel~~
+- ~~Bedingte Formatierung für Notenvorschlag~~
 - ~~Bedingte Formatierung für Kompetenzbereiche~~
-- Bedingte Formatierung Gruppe != Klasse
-- Sort Gruppe/Klasse before Name
-- Kompetenzzähler
-- Schwellwerte für bedingte Formatierung in Excel
 
 Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
 

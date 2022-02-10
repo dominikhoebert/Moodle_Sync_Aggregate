@@ -25,27 +25,27 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10):
                                                   formula=text_formula('GKv', range)))
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_gku,
                                                   formula=text_formula('GKü', range)))
-    if type == 'GK':
+    elif type == 'GK':
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_gkv,
                                                   formula=text_formula('v', range)))
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_gku,
                                                   formula=text_formula('ü', range)))
-    if type == 'EK':
+    elif type == 'EK':
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_ekv,
                                                   formula=text_formula('v', range)))
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_eku,
                                                   formula=text_formula('ü', range)))
-    if type == 'GEK' or type == 'GK' or type == 'K':
+    elif type == 'GEK' or type == 'GK' or type == 'K':
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
                                                   formula=text_formula('n', range)))
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
                                                   formula=text_formula('-', range)))
-    if type == 'marks':
+    elif type == 'marks':
         ws.conditional_formatting.add(range, ColorScaleRule(start_type='num', start_value=1, start_color='63BE7B',
-                                                            mid_type='percent', mid_value=50, mid_color='FFEB84',
+                                                            mid_type='num', mid_value=3, mid_color='FFEB84',
                                                             end_type='num', end_value=5, end_color='f8696b'))
 
-    if type == 'points':
+    elif type == 'points':
         ws.conditional_formatting.add(range,
                                       CellIsRule(operator='lessThan', formula=[start], stopIfTrue=False,
                                                  fill=PatternFill(bgColor="F8696B")))
@@ -53,6 +53,14 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10):
                                       ColorScaleRule(start_type='num', start_value=start, start_color='FBAA77',
                                                      mid_type='percent', mid_value=70, mid_color='FFEB84',
                                                      end_type='num', end_value=end, end_color='63BE7B'))
+    elif type == 'scale':
+        ws.conditional_formatting.add(range, ColorScaleRule(start_type='min', start_color='f8696b',
+                                                            mid_type='percent', mid_value=50, mid_color='FFEB84',
+                                                            end_type='max', end_color='63BE7B'))
+    elif type == 'group':
+        ws.conditional_formatting.add(range,
+                                      CellIsRule(operator='notEqual', formula=['B2'], stopIfTrue=False,
+                                                 fill=PatternFill(bgColor="F8696B")))
 
 
 if __name__ == '__main__':
