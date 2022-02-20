@@ -30,9 +30,12 @@ Token benötigt.
 
 ## TODOs
 
+- Create Negative Competences Column (ie. 1.1;1.3)
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download multiple and export into one file
 - Download Progress Bar (Multithreading?)
+- Download and Merge Grundkompetenzüberprüfungen
+- Create Grundkompetenzüberprüfungen list
 - Using LDAP for studentlist
 - Login to Moodle using Username and Password
 - Kompetenzzähler?
