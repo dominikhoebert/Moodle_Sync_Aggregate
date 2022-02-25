@@ -1,25 +1,18 @@
-from main_app import list_to_float
-from locale import atof, setlocale, LC_NUMERIC
-
-def list_to_float2(grade_list):
-    return_list = []
-    for item in grade_list:
-        temp_item = item
-        try:
-            temp_item = float(atof(item))
-        except (ValueError, TypeError):
-            pass
-        return_list.append(temp_item)
-    return return_list
-
+import json
+import requests
 
 if __name__ == '__main__':
-    setlocale(LC_NUMERIC, 'de_DE')
+    with open('data/credentials.json', 'r') as f:
+        data = json.load(f)
+    url = data['url']
+    key = data['key']
+    username = data['username']
+    password = data['password']
+    print(url, key, username, password)
+    obj = {"username": username, "password": password, "service": "tgm_hoedmoodlesync"}
 
-    l = ['x', '2', '2.3', '7,7']
-
-    print(l)
-
-    l2 = list_to_float2(l)
-
-    print(l2)
+    response = requests.post(url + "/login/token.php", data=obj)
+    response = response.json()
+    token = response['token']
+    private_token = response['privatetoken']
+    print(token, private_token)
