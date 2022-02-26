@@ -92,12 +92,14 @@ class Window(QMainWindow, Ui_MainWindow):
             self.splitter.restoreState(self.settings.value('splitter'))
         self.use_studentlist = self.settings.value("use_studentlist",
                                                    False)  # == 'true' TODO ? Working on mac like without ==true, tb checked on windows
-        self.create_competence_columns = self.settings.value('create_competence_columns', True)  # TODO add settings
-        self.mark_suggestion = self.settings.value('mark_suggestion', True)  # TODO add settings
+        self.create_competence_columns = self.settings.value('create_competence_columns', True)
+        self.mark_suggestion = self.settings.value('mark_suggestion', False)
 
         # Startup
-        self.url = self.settings.value("url", None)
-        self.key = self.settings.value("key", None)
+        self.url = self.settings.value("url", "https://elearning.tgm.ac.at/")
+        self.service = self.settings.value("service", "tgm_hoedmoodlesync")
+        self.username = self.settings.value("username", None)
+        self.password = self.settings.value("password", None)
         self.student_list_path = self.settings.value("studentlist",
                                                      "~/tgm - Die Schule der Technik/HIT - Abteilung für Informations"
                                                      "technologie - Dokumente/Organisation/Tools/studentlist.csv")
@@ -106,11 +108,11 @@ class Window(QMainWindow, Ui_MainWindow):
         self.login()
 
     def login(self):
-        if self.url and self.key:
-            self.moodle = MoodleSync(self.url, self.key)
+        if self.username and self.password:
+            self.moodle = MoodleSync(self.url, self.username, self.password, self.service)
             self.download_courses()
         else:
-            fail_to_load("Moodle URL/Key not defined. Please check Settings.")
+            fail_to_load("Moodle Login not defined. Please check Settings.")
 
     def get_course_id(self, name):
         return self.courses[name]['id']
@@ -199,7 +201,7 @@ class Window(QMainWindow, Ui_MainWindow):
                             '41': "4.1 Analoge Signale", '42': "4.2 Sensoren", '43': "4.3 Aufgaben des Betriebssystems",
                             '44': "4.4 Betriebssysteme Anwendung", '61': "6.1 Datenerfassung",
                             '62': "6.2 Systemanbindung", '63': "6.3 Serverinstallation", '64': "6.4 Servermanagement",
-                            '65': "6.5 Virtualisierung"}
+                            '65': "6.5 Virtualisierung"}  # TODO to json file
 
             self.competence_helper = {}
             for competence_number, modules in self.competences.items():
@@ -372,17 +374,24 @@ class Window(QMainWindow, Ui_MainWindow):
             self.settings.setValue("dir", file[:file.rfind("/")])
 
     def open_settings(self):
-        settings = SettingsDlg(self, use_studentlist=self.use_studentlist, url=self.settings.value("url", ""),
-                               key=self.settings.value("key", ""), studentlist=self.student_list_path)
+        settings = SettingsDlg(self.url, self.service, self.username, self.password, self.use_studentlist,
+                               self.student_list_path, self.mark_suggestion, parent=self)
         if settings.exec():
             self.url = settings.ui.url_lineEdit.text()
-            self.key = settings.ui.key_lineEdit.text()
-            self.student_list_path = settings.ui.studentlist_lineEdit.text()
-            self.settings.setValue("url", self.url)
-            self.settings.setValue("key", self.key)
-            self.settings.setValue("studentlist", self.student_list_path)
+            self.service = settings.ui.service_lineEdit.text()
+            self.username = settings.ui.username_lineEdit.text()
+            self.password = settings.ui.password_lineEdit.text()
             self.use_studentlist = settings.ui.checkBox.isChecked()
+            self.student_list_path = settings.ui.studentlist_lineEdit.text()
+            self.mark_suggestion = settings.ui.marksuggestion_checkBox.isChecked()
+
+            self.settings.setValue("url", self.url)
+            self.settings.setValue("service", self.service)
+            self.settings.setValue("username", self.username)
+            self.settings.setValue("password", self.password)
             self.settings.setValue("use_studentlist", self.use_studentlist)
+            self.settings.setValue("studentlist", self.student_list_path)
+            self.settings.setValue("mark_suggestion", self.mark_suggestion)
         self.login()
 
     def all_none_checkbox_changed(self):
@@ -397,19 +406,20 @@ class Window(QMainWindow, Ui_MainWindow):
 
 
 class SettingsDlg(QDialog):
-    def __init__(self, parent=None, url=None, key=None, studentlist=None, use_studentlist=False):
+    def __init__(self, url, service, username, password, use_studentlist, studentlistpath, mark_suggestion,
+                 parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self.ui.checkBox.setChecked(use_studentlist)
         self.ui.studentlist_lineEdit.setEnabled(use_studentlist)
+        self.ui.marksuggestion_checkBox.setChecked(mark_suggestion)
         self.ui.checkBox.stateChanged.connect(self.checkbox_changed)
-        if url:
-            self.ui.url_lineEdit.setText(url)
-        if key:
-            self.ui.key_lineEdit.setText(key)
-        if studentlist:
-            self.ui.studentlist_lineEdit.setText(studentlist)
+        self.ui.url_lineEdit.setText(url)
+        self.ui.service_lineEdit.setText(service)
+        self.ui.username_lineEdit.setText(username)
+        self.ui.password_lineEdit.setText(password)
+        self.ui.studentlist_lineEdit.setText(studentlistpath)
 
     def checkbox_changed(self):
         self.ui.studentlist_lineEdit.setEnabled(self.ui.checkBox.isChecked())

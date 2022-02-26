@@ -1,5 +1,6 @@
 import moodle_api
 import pandas as pd
+import requests
 
 """
 [SSL: CERTIFICATE_VERIFY_FAILED] Error: https://stackoverflow.com/questions/51925384/unable-to-get-local-issuer-certificate-when-using-requests-in-python
@@ -8,9 +9,15 @@ Install certifi; copy cacert.pem aus certifi folder
 
 
 class MoodleSync:
-    def __init__(self, url: str, key: str):
+    def __init__(self, url: str, username: str, password: str, service: str):
         moodle_api.URL = url
-        moodle_api.KEY = key
+        moodle_api.KEY = self.get_token(url, username, password, service)
+
+    def get_token(self, url, username, password, service):
+        obj = {"username": username, "password": password, "service": service}
+        response = requests.post(url + "/login/token.php", data=obj)
+        response = response.json()
+        return response['token']
 
     def get_recent_courses(self):
         response = moodle_api.call('core_course_get_recent_courses')

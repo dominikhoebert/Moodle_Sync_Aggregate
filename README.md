@@ -31,13 +31,14 @@ Token benötigt.
 ## TODOs
 
 - Create Negative Competences Column (ie. 1.1;1.3)
+- Competences Names to json file
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download multiple and export into one file
-- Download Progress Bar (multiprozessing?)
+- Download Progress Bar (multiprocessing?)
 - Download and Merge Grundkompetenzüberprüfungen
 - Create Grundkompetenzüberprüfungen list
 - Using LDAP for studentlist
-- Login to Moodle using Username and Password
+- ~~Login to Moodle using Username and Password~~
 - Kompetenzzähler?
 - andere Berechnungen?
 - ~~Schwellwerte für bedingte Formatierung in Excel~~
@@ -63,6 +64,10 @@ Token benötigt.
 - ~~Notenberechnung aus Notenschlüssel~~
 - ~~Bedingte Formatierung für Notenvorschlag~~
 - ~~Bedingte Formatierung für Kompetenzbereiche~~
+
+## Run from Source
+1. pip install -r requirements.txt
+2. Copy content of additional_cert.pem into venv(or other python environment folter)/lib/python3.10/site-packages/certifi/cacert.pem
 
 Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
 
