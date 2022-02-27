@@ -90,10 +90,22 @@ class Window(QMainWindow, Ui_MainWindow):
         self.move(self.settings.value("pos", QPoint(50, 50)))
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
-        self.use_studentlist = self.settings.value("use_studentlist",
-                                                   False)  # == 'true' TODO ? Working on mac like without ==true, tb checked on windows
+        self.use_studentlist = self.settings.value("use_studentlist",  False)
+        # == 'true' TODO ? Working on mac like without ==true, tb checked on windows
         self.create_competence_columns = self.settings.value('create_competence_columns', True)
         self.mark_suggestion = self.settings.value('mark_suggestion', False)
+        if self.use_studentlist == 'true' or self.use_studentlist == True:
+            self.use_studentlist = True
+        else:
+            self.use_studentlist = False
+        if self.create_competence_columns == 'true' or self.create_competence_columns == True:
+            self.create_competence_columns = True
+        else:
+            self.create_competence_columns = False
+        if self.mark_suggestion == 'true' or self.mark_suggestion == True:
+            self.mark_suggestion = True
+        else:
+            self.mark_suggestion = False
 
         # Startup
         self.url = self.settings.value("url", "https://elearning.tgm.ac.at/")
