@@ -1,6 +1,7 @@
 import sys
 import datetime
 from locale import atof, setlocale, LC_NUMERIC
+import json
 
 import pandas as pd
 from openpyxl import Workbook, worksheet
@@ -91,7 +92,6 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
         self.use_studentlist = self.settings.value("use_studentlist",  False)
-        # == 'true' TODO ? Working on mac like without ==true, tb checked on windows
         self.create_competence_columns = self.settings.value('create_competence_columns', True)
         self.mark_suggestion = self.settings.value('mark_suggestion', False)
         if self.use_studentlist == 'true' or self.use_studentlist == True:
@@ -208,12 +208,11 @@ class Window(QMainWindow, Ui_MainWindow):
                             else:
                                 self.competences[competence_number] = [module]
 
-            module_names = {'21': "2.1 Elektrotechnik und Elektronik", '22': "2.2 Textverarbeitungsprogramme",
-                            '23': "2.3 Boolsche Algebra", '24': "2.4 Tabellenkalkulationsprogramme",
-                            '41': "4.1 Analoge Signale", '42': "4.2 Sensoren", '43': "4.3 Aufgaben des Betriebssystems",
-                            '44': "4.4 Betriebssysteme Anwendung", '61': "6.1 Datenerfassung",
-                            '62': "6.2 Systemanbindung", '63': "6.3 Serverinstallation", '64': "6.4 Servermanagement",
-                            '65': "6.5 Virtualisierung"}  # TODO to json file
+            try:
+                with open('modules.json', 'r') as f:
+                    module_names = json.load(f)
+            except FileNotFoundError:
+                module_names = {}
 
             self.competence_helper = {}
             for competence_number, modules in self.competences.items():

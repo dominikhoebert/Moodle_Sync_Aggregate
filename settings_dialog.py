@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'settings.ui'
+# Form implementation generated from reading ui file '.\settings.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -50,6 +50,7 @@ class Ui_Dialog(object):
         self.marksuggestion_checkBox.setObjectName("marksuggestion_checkBox")
         self.gridLayout.addWidget(self.marksuggestion_checkBox, 6, 1, 1, 1)
         self.password_lineEdit = QtWidgets.QLineEdit(Dialog)
+        self.password_lineEdit.setEchoMode(QtWidgets.QLineEdit.PasswordEchoOnEdit)
         self.password_lineEdit.setObjectName("password_lineEdit")
         self.gridLayout.addWidget(self.password_lineEdit, 3, 1, 1, 1)
         self.label_3 = QtWidgets.QLabel(Dialog)
