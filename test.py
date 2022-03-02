@@ -1,5 +1,5 @@
 import json
-import requests
+import pandas as pd
 
 if __name__ == '__main__':
     with open('data/credentials.json', 'r') as f:
@@ -9,10 +9,11 @@ if __name__ == '__main__':
     username = data['username']
     password = data['password']
     print(url, key, username, password)
-    obj = {"username": username, "password": password, "service": "tgm_hoedmoodlesync"}
 
-    response = requests.post(url + "/login/token.php", data=obj)
-    response = response.json()
-    token = response['token']
-    private_token = response['privatetoken']
-    print(token, private_token)
+    try:
+        student_list = pd.read_csv("data/studentlist2.csv")
+    except Exception as e:
+        print("Failed to load Student List CSV. Please check Settings.", e)
+
+    print(student_list)
+

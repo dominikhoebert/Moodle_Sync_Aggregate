@@ -31,7 +31,7 @@ def list_to_float(grade_list):
         temp_item = item
         try:
             temp_item = float(atof(item))
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, AttributeError):
             pass
         return_list.append(temp_item)
     return return_list
@@ -114,7 +114,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.password = self.settings.value("password", None)
         self.student_list_path = self.settings.value("studentlist",
                                                      "~/tgm - Die Schule der Technik/HIT - Abteilung für Informations"
-                                                     "technologie - Dokumente/Organisation/Tools/studentlist.csv")
+                                                     "technologie - Dokumente/Organisation/Tools/studentlistv2.csv")
         self.moodle = None
 
         self.login()
@@ -181,12 +181,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.grades = self.grades.replace("überwiegend erfüllt", "ü")
 
         if self.student_list is not None:
-            self.grades[['a', 'b', 'c']] = self.grades['Schüler'].str.lower().str.split(' ', 2, expand=True)
-            self.grades['Name2'] = self.grades['a'] + ' ' + self.grades['b']
-            self.student_list[['a', 'b', 'c']] = self.student_list['Name'].str.lower().str.split(' ', 2, expand=True)
-            self.student_list['Name3'] = self.student_list['a'] + ' ' + self.student_list['b']
-            self.grades = self.grades.merge(self.student_list, how='left', left_on='Name2', right_on='Name3')
-            self.grades = self.grades.drop(['a_x', 'b_x', 'c_x', 'Name2', 'Name', 'a_y', 'b_y', 'c_y', 'Name3'], axis=1)
+            self.grades = self.grades.merge(self.student_list, how='left', left_on='Email', right_on='mail')
+            self.grades = self.grades.drop(['dn', 'mail', 'sn', 'givenname', 'name', 'accountexpirationdate'], axis=1)
+            self.grades = self.grades.rename(columns={'department': 'Klasse'})
         else:
             self.grades["Klasse"] = ""
 

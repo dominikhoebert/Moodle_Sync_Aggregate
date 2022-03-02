@@ -38,6 +38,7 @@ Token benötigt.
 - Download and Merge Grundkompetenzüberprüfungen
 - Create Grundkompetenzüberprüfungen list
 - Using LDAP for studentlist
+- Opendialog for studentlistpath
 - ~~Login to Moodle using Username and Password~~
 - Kompetenzzähler?
 - andere Berechnungen?
