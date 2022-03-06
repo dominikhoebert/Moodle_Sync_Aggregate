@@ -95,6 +95,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.create_competence_columns = self.settings.value('create_competence_columns', True)
         self.mark_suggestion = self.settings.value('mark_suggestion', False)
         self.negative_competences = True
+        self.competence_counter = True
         if self.use_studentlist == 'true' or self.use_studentlist == True:
             self.use_studentlist = True
         else:
@@ -227,6 +228,13 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.negative_competences:
             self.grades["Negative Kompetenzen"] = '='
 
+        if self.competence_counter:
+            self.grades['N'] = '='
+            self.grades['GKü'] = '='
+            self.grades['GKv'] = '='
+            self.grades['EKü'] = '='
+            self.grades['EKv'] = '='
+
         self.create_modules_list()
 
     def create_modules_list(self):
@@ -300,7 +308,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 ws[f'A{max_row + 3}'].font = Font(bold=True)
                 ws[f'{cell.column_letter}{max_row + 2}'].value = 6
                 ws[f'{cell.column_letter}{max_row + 3}'].value = 10
-            elif module[1] == '.':  # if Kompetenz
+            elif len(module) > 1 and module[1] == '.':  # if Kompetenz
                 custom_conditional_formatting(ws, cell_range, 'K')
                 comp_list.append(cell.column_letter)
                 for c_cell in ws[cell.column_letter]:
@@ -388,6 +396,23 @@ class Window(QMainWindow, Ui_MainWindow):
                                                   f'{comp_letter}{c_cell.row})))>0,"{comp_number};","")')
                         c_cell.value += " & ".join(formular_parts)
                 ws.column_dimensions[cell.column_letter].width = 14
+
+            elif module in ['N', 'GKü', 'GKv', 'EKü', 'EKv'] and self.competence_counter:
+                col_letters = []
+                if module == 'N':
+                    col_letters.extend(comp_dict['GK'])
+                    col_letters.extend(comp_dict['GEK'])
+                elif module == 'GKü' or module == 'GKv':
+                    col_letters.extend(comp_dict['GK'])
+                    col_letters.extend(comp_dict['GEK'])
+                elif module == 'EKü' or module == 'EKv':
+                    col_letters.extend(comp_dict['EK'])
+                    col_letters.extend(comp_dict['GEK'])
+                print(col_letters)
+                # TODO affected_cell = f"SUMPRODUCT(--EXACT({module_letter}{c_cell.row}"
+                for c_cell in ws[cell.column_letter]:
+                    if c_cell.value == '=':
+                        pass
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()

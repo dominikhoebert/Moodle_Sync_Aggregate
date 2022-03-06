@@ -30,8 +30,7 @@ Token benötigt.
 
 ## TODOs
 
-- ~~Create Negative Competences Column (ie. 1.1;1.3)~~
-- ~~Competences Names to json file~~
+- Kompetenzzähler
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download multiple and export into one file
 - Download Progress Bar (multiprocessing?)
@@ -39,9 +38,10 @@ Token benötigt.
 - Create Grundkompetenzüberprüfungen list
 - Using LDAP for studentlist
 - Opendialog for studentlistpath
-- ~~Login to Moodle using Username and Password~~
-- Kompetenzzähler?
 - andere Berechnungen?
+- ~~Create Negative Competences Column (ie. 1.1;1.3)~~
+- ~~Competences Names to json file~~
+- ~~Login to Moodle using Username and Password~~
 - ~~Schwellwerte für bedingte Formatierung in Excel~~
 - ~~Sort Gruppe/Klasse before Name~~
 - ~~Bedingte Formatierung Gruppe != Klasse~~
