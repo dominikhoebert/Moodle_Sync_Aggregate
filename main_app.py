@@ -91,9 +91,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.move(self.settings.value("pos", QPoint(50, 50)))
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
-        self.use_studentlist = self.settings.value("use_studentlist",  False)
+        self.use_studentlist = self.settings.value("use_studentlist", False)
         self.create_competence_columns = self.settings.value('create_competence_columns', True)
         self.mark_suggestion = self.settings.value('mark_suggestion', False)
+        self.negative_competences = True
         if self.use_studentlist == 'true' or self.use_studentlist == True:
             self.use_studentlist = True
         else:
@@ -223,6 +224,9 @@ class Window(QMainWindow, Ui_MainWindow):
             self.grades["Punkte"] = '='
             self.grades["Notenvorschlag"] = '='
 
+        if self.negative_competences:
+            self.grades["Negative Kompetenzen"] = '='
+
         self.create_modules_list()
 
     def create_modules_list(self):
@@ -270,6 +274,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         max_row = ws.max_row
         comp_dict = {'GK': [], 'GEK': [], 'EK': []}
+        comp_list = []
         for cell in ws[1]:
             module = str(cell.value)
             cell_range = f"{cell.column_letter}2:{cell.column_letter}{max_row}"
@@ -297,6 +302,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 ws[f'{cell.column_letter}{max_row + 3}'].value = 10
             elif module[1] == '.':  # if Kompetenz
                 custom_conditional_formatting(ws, cell_range, 'K')
+                comp_list.append(cell.column_letter)
                 for c_cell in ws[cell.column_letter]:
                     if c_cell.value == '=':
                         c_cell.value = '=' + ' & ";" & '.join(
@@ -371,6 +377,17 @@ class Window(QMainWindow, Ui_MainWindow):
 
             elif module == 'Gruppen':
                 custom_conditional_formatting(ws, cell_range, type='group')
+
+            elif module == 'Negative Kompetenzen' and self.negative_competences:
+                for c_cell in ws[cell.column_letter]:
+                    if c_cell.value == '=':
+                        formular_parts = []
+                        for comp_letter in comp_list:
+                            comp_number = ws[f'{comp_letter}1'].value[:3]
+                            formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
+                                                  f'{comp_letter}{c_cell.row})))>0,"{comp_number};","")')
+                        c_cell.value += " & ".join(formular_parts)
+                ws.column_dimensions[cell.column_letter].width = 14
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()

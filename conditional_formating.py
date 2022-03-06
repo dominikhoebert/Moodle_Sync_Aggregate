@@ -35,16 +35,10 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10):
                                                   formula=text_formula('v', range)))
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_eku,
                                                   formula=text_formula('ü', range)))
-    elif type == 'GEK' or type == 'GK' or type == 'K':
-        ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
-                                                  formula=text_formula('n', range)))
-        ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
-                                                  formula=text_formula('-', range)))
     elif type == 'marks':
         ws.conditional_formatting.add(range, ColorScaleRule(start_type='num', start_value=1, start_color='63BE7B',
                                                             mid_type='num', mid_value=3, mid_color='FFEB84',
                                                             end_type='num', end_value=5, end_color='f8696b'))
-
     elif type == 'points':
         ws.conditional_formatting.add(range,
                                       CellIsRule(operator='lessThan', formula=[start], stopIfTrue=False,
@@ -61,6 +55,11 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10):
         ws.conditional_formatting.add(range,
                                       CellIsRule(operator='notEqual', formula=['B2'], stopIfTrue=False,
                                                  fill=PatternFill(bgColor="F8696B")))
+    if type == 'GEK' or type == 'GK' or type == 'K':
+        ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
+                                                  formula=text_formula('n', range)))
+        ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
+                                                  formula=text_formula('-', range)))
 
 
 if __name__ == '__main__':

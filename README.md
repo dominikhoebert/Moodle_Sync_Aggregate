@@ -30,8 +30,8 @@ Token benötigt.
 
 ## TODOs
 
-- Create Negative Competences Column (ie. 1.1;1.3)
-- Competences Names to json file
+- ~~Create Negative Competences Column (ie. 1.1;1.3)~~
+- ~~Competences Names to json file~~
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download multiple and export into one file
 - Download Progress Bar (multiprocessing?)
