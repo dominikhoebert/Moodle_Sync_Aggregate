@@ -9,12 +9,13 @@ def text_formula(search_for, range):
     return [f'NOT(ISERROR(SEARCH("{search_for}",{range[:2]})))']
 
 
-def custom_conditional_formatting(ws, range, type, start=6, end=10):
-    style_ekv = DifferentialStyle(font=Font(color="006100"), fill=PatternFill(bgColor="C6EFCE"))
-    style_eku = DifferentialStyle(font=Font(color="006100"), fill=PatternFill(bgColor="C4D79B"))
-    style_gkv = DifferentialStyle(font=Font(color="9C5700"), fill=PatternFill(bgColor="FFEB9C"))
-    style_gku = DifferentialStyle(font=Font(color="9C5700"), fill=PatternFill(bgColor="FFC000"))
-    style_n = DifferentialStyle(font=Font(color="9C0006"), fill=PatternFill(bgColor="FFC7CE"))
+def custom_conditional_formatting(ws, range, type, start=6, end=10, competence='N'):
+    bgcolors = {'EKv': "C6EFCE", 'EKü': "C4D79B", 'GKv': "FFEB9C", 'GKü': "FFC000", 'N': "FFC7CE"}
+    style_ekv = DifferentialStyle(font=Font(color="006100"), fill=PatternFill(bgColor=bgcolors['EKv']))
+    style_eku = DifferentialStyle(font=Font(color="006100"), fill=PatternFill(bgColor=bgcolors['EKü']))
+    style_gkv = DifferentialStyle(font=Font(color="9C5700"), fill=PatternFill(bgColor=bgcolors['GKv']))
+    style_gku = DifferentialStyle(font=Font(color="9C5700"), fill=PatternFill(bgColor=bgcolors['GKü']))
+    style_n = DifferentialStyle(font=Font(color="9C0006"), fill=PatternFill(bgColor=bgcolors['N']))
 
     if type == 'GEK':
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_ekv,
@@ -55,6 +56,9 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10):
         ws.conditional_formatting.add(range,
                                       CellIsRule(operator='notEqual', formula=['B2'], stopIfTrue=False,
                                                  fill=PatternFill(bgColor="F8696B")))
+    elif type == 'sum':
+        ws.conditional_formatting.add(range, ColorScaleRule(start_type='min', start_color='FFFFFF', end_type='max',
+                                                            end_color=bgcolors[competence]))
     if type == 'GEK' or type == 'GK' or type == 'K':
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_n,
                                                   formula=text_formula('n', range)))

@@ -30,7 +30,7 @@ Token benötigt.
 
 ## TODOs
 
-- Kompetenzzähler
+- ~~Kompetenzzähler~~
 - Berechnung und Streichungen von WH/Wiederholung/SMÜ
 - Download multiple and export into one file
 - Download Progress Bar (multiprocessing?)

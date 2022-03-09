@@ -229,11 +229,11 @@ class Window(QMainWindow, Ui_MainWindow):
             self.grades["Negative Kompetenzen"] = '='
 
         if self.competence_counter:
-            self.grades['N'] = '='
-            self.grades['GKü'] = '='
-            self.grades['GKv'] = '='
-            self.grades['EKü'] = '='
-            self.grades['EKv'] = '='
+            self.grades['ΣN'] = '='
+            self.grades['ΣGKü'] = '='
+            self.grades['ΣGKv'] = '='
+            self.grades['ΣEKü'] = '='
+            self.grades['ΣEKv'] = '='
 
         self.create_modules_list()
 
@@ -268,9 +268,8 @@ class Window(QMainWindow, Ui_MainWindow):
         ws.column_dimensions['B'].width = 6
         ws.column_dimensions['C'].width = 8
         ws.column_dimensions['D'].width = 10
-        ws.column_dimensions[get_column_letter(ws.max_column)].width = 5
 
-        for i in range(5, ws.max_column):
+        for i in range(5, ws.max_column+1):
             ws.column_dimensions[get_column_letter(i)].width = 4
 
         ws.freeze_panes = ws['B1']
@@ -397,22 +396,34 @@ class Window(QMainWindow, Ui_MainWindow):
                         c_cell.value += " & ".join(formular_parts)
                 ws.column_dimensions[cell.column_letter].width = 14
 
-            elif module in ['N', 'GKü', 'GKv', 'EKü', 'EKv'] and self.competence_counter:
+            elif module in ['ΣN', 'ΣGKü', 'ΣGKv', 'ΣEKü', 'ΣEKv'] and self.competence_counter:
+                custom_conditional_formatting(ws, cell_range, type='sum', competence=module[1:])
                 col_letters = []
-                if module == 'N':
+                search_for = []
+                if module == 'ΣN' or module == 'ΣGKü' or module == 'ΣGKv':
                     col_letters.extend(comp_dict['GK'])
                     col_letters.extend(comp_dict['GEK'])
-                elif module == 'GKü' or module == 'GKv':
-                    col_letters.extend(comp_dict['GK'])
-                    col_letters.extend(comp_dict['GEK'])
-                elif module == 'EKü' or module == 'EKv':
+                    if module == 'ΣN':
+                        search_for = ['n', '-']
+                    if module == 'ΣGKü':
+                        search_for = ['ü', 'GKü']
+                    elif module == 'ΣGKv':
+                        search_for = ['v', 'GKv']
+                elif module == 'ΣEKü' or module == 'ΣEKv':
                     col_letters.extend(comp_dict['EK'])
                     col_letters.extend(comp_dict['GEK'])
-                print(col_letters)
-                # TODO affected_cell = f"SUMPRODUCT(--EXACT({module_letter}{c_cell.row}"
+                    if module == 'ΣEKü':
+                        search_for = ['ü', 'EKü']
+                    elif module == 'ΣEKv':
+                        search_for = ['v', 'EKv']
+                formular_parts = []
+                for letter in col_letters:
+                    for sf in search_for:
+                        formular_parts.append(f'SUMPRODUCT(--EXACT({letter}#,"{sf}"))')
+                formular = "+".join(formular_parts)
                 for c_cell in ws[cell.column_letter]:
                     if c_cell.value == '=':
-                        pass
+                        c_cell.value += formular.replace('#', str(c_cell.row))
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()
