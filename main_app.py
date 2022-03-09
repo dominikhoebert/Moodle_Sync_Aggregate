@@ -96,6 +96,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.mark_suggestion = self.settings.value('mark_suggestion', False)
         self.negative_competences = True
         self.competence_counter = True
+        self.wh_calculation = True
+        self.number_cancel = self.settings.value('number_cancel', 2)
         if self.use_studentlist == 'true' or self.use_studentlist == True:
             self.use_studentlist = True
         else:
@@ -235,6 +237,9 @@ class Window(QMainWindow, Ui_MainWindow):
             self.grades['ΣEKü'] = '='
             self.grades['ΣEKv'] = '='
 
+        if self.wh_calculation:
+            self.grades['∅SMÜ'] = '='
+
         self.create_modules_list()
 
     def create_modules_list(self):
@@ -269,7 +274,7 @@ class Window(QMainWindow, Ui_MainWindow):
         ws.column_dimensions['C'].width = 8
         ws.column_dimensions['D'].width = 10
 
-        for i in range(5, ws.max_column+1):
+        for i in range(5, ws.max_column + 1):
             ws.column_dimensions[get_column_letter(i)].width = 4
 
         ws.freeze_panes = ws['B1']
@@ -282,6 +287,7 @@ class Window(QMainWindow, Ui_MainWindow):
         max_row = ws.max_row
         comp_dict = {'GK': [], 'GEK': [], 'EK': []}
         comp_list = []
+        wh_letter_list = []
         for cell in ws[1]:
             module = str(cell.value)
             cell_range = f"{cell.column_letter}2:{cell.column_letter}{max_row}"
@@ -294,7 +300,9 @@ class Window(QMainWindow, Ui_MainWindow):
             elif module.startswith("GEK"):
                 custom_conditional_formatting(ws, cell_range, 'GEK')
                 comp_dict['GEK'].append(cell.column_letter)
+
             elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
+                wh_letter_list.append(cell.column_letter)
                 for cx in ws[cell.column_letter]:
                     if cx.value == '-':
                         cx.value = 0.0
@@ -307,6 +315,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 ws[f'A{max_row + 3}'].font = Font(bold=True)
                 ws[f'{cell.column_letter}{max_row + 2}'].value = 6
                 ws[f'{cell.column_letter}{max_row + 3}'].value = 10
+
             elif len(module) > 1 and module[1] == '.':  # if Kompetenz
                 custom_conditional_formatting(ws, cell_range, 'K')
                 comp_list.append(cell.column_letter)
@@ -315,6 +324,7 @@ class Window(QMainWindow, Ui_MainWindow):
                         c_cell.value = '=' + ' & ";" & '.join(
                             [f"{get_column_for_module(ws, c)}{c_cell.row}" for c in
                              self.competences[self.competence_helper[module]]])
+
             elif module == 'Punkte' and self.mark_suggestion:
                 for c_cell in ws[cell.column_letter]:
                     if c_cell.value == '=':
@@ -333,6 +343,7 @@ class Window(QMainWindow, Ui_MainWindow):
                                     c_cell.value += f'{affected_cell},"v"))*2+'
                         c_cell.value = c_cell.value[:-1]
                 custom_conditional_formatting(ws, cell_range, type='scale')
+
             elif module == 'Notenvorschlag' and self.mark_suggestion:
                 sc = ws.max_column + 3  # start column
 
@@ -424,6 +435,26 @@ class Window(QMainWindow, Ui_MainWindow):
                 for c_cell in ws[cell.column_letter]:
                     if c_cell.value == '=':
                         c_cell.value += formular.replace('#', str(c_cell.row))
+
+            elif module == '∅SMÜ' and self.wh_calculation:
+                #=(SUM(F2:L2)-SMALL(F2:L2; 1)-SMALL(F2:L2; 2))/5
+                formular_range = "#,".join(wh_letter_list) + "#"
+                formular = f"(SUM({formular_range})"
+                for i in range(self.number_cancel):
+                    formular += f"-SMALL(({formular_range}), {i+1})"
+                formular += f")/{len(wh_letter_list)-self.number_cancel}"
+                for c_cell in ws[cell.column_letter]:
+                    if c_cell.value == '=':
+                        c_cell.value += formular.replace('#', str(c_cell.row))
+                custom_conditional_formatting(ws, cell_range, type='points',
+                                              start=f'${cell.column_letter}${max_row + 2}',
+                                              end=f'${cell.column_letter}${max_row + 3}')
+                ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
+                ws[f'A{max_row + 2}'].font = Font(bold=True)
+                ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
+                ws[f'A{max_row + 3}'].font = Font(bold=True)
+                ws[f'{cell.column_letter}{max_row + 2}'].value = 6
+                ws[f'{cell.column_letter}{max_row + 3}'].value = 10
 
         directory = self.settings.value('dir', "")
         ct = datetime.datetime.now()

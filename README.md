@@ -31,7 +31,9 @@ Token benötigt.
 ## TODOs
 
 - ~~Kompetenzzähler~~
-- Berechnung und Streichungen von WH/Wiederholung/SMÜ
+- ~~Berechnung und Streichungen von WH/Wiederholung/SMÜ~~
+- add Cancel Number in settings
+- add load button
 - Download multiple and export into one file
 - Download Progress Bar (multiprocessing?)
 - Download and Merge Grundkompetenzüberprüfungen
