@@ -6,41 +6,51 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>612</width>
-    <height>278</height>
+    <width>647</width>
+    <height>362</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Settings</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="1">
-    <widget class="QLineEdit" name="service_lineEdit">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Student List Path</string>
-     </property>
-     <property name="buddy">
-      <cstring>studentlist_lineEdit</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="1">
+   <item row="10" column="1" colspan="2">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="2">
+    <widget class="QLineEdit" name="url_lineEdit"/>
+   </item>
+   <item row="3" column="1" colspan="2">
+    <widget class="QLineEdit" name="password_lineEdit">
+     <property name="echoMode">
+      <enum>QLineEdit::PasswordEchoOnEdit</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Password</string>
+     </property>
+     <property name="buddy">
+      <cstring>password_lineEdit</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Student List Path</string>
+     </property>
+     <property name="buddy">
+      <cstring>studentlist_lineEdit</cstring>
      </property>
     </widget>
    </item>
@@ -54,34 +64,20 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="1">
-    <widget class="QLineEdit" name="url_lineEdit"/>
+   <item row="2" column="1" colspan="2">
+    <widget class="QLineEdit" name="username_lineEdit"/>
    </item>
-   <item row="4" column="1">
+   <item row="6" column="1">
     <widget class="QCheckBox" name="checkBox">
      <property name="text">
       <string>Use Student List</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="1">
+   <item row="7" column="1">
     <widget class="QLineEdit" name="studentlist_lineEdit">
      <property name="enabled">
       <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="1">
-    <widget class="QCheckBox" name="marksuggestion_checkBox">
-     <property name="text">
-      <string>Create Marksuggestions</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="1">
-    <widget class="QLineEdit" name="password_lineEdit">
-     <property name="echoMode">
-      <enum>QLineEdit::PasswordEchoOnEdit</enum>
      </property>
     </widget>
    </item>
@@ -105,18 +101,73 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
-    <widget class="QLineEdit" name="username_lineEdit"/>
-   </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label_5">
+   <item row="7" column="2">
+    <widget class="QPushButton" name="open_pushButton">
      <property name="text">
-      <string>Password</string>
-     </property>
-     <property name="buddy">
-      <cstring>password_lineEdit</cstring>
+      <string>Open...</string>
      </property>
     </widget>
+   </item>
+   <item row="1" column="1" colspan="2">
+    <widget class="QLineEdit" name="service_lineEdit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>LDAP</string>
+     </property>
+     <property name="buddy">
+      <cstring>download_pushButton</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="2">
+    <widget class="QPushButton" name="download_pushButton">
+     <property name="text">
+      <string>Download Studentlist</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QLabel" name="last_download_label">
+     <property name="text">
+      <string>last download: </string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_7">
+     <property name="text">
+      <string>Username Extension</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1" colspan="2">
+    <widget class="QLineEdit" name="extension_lineEdit"/>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLabel" name="label_8">
+     <property name="text">
+      <string>Cancle Number</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="1">
+    <widget class="QCheckBox" name="marksuggestion_checkBox">
+     <property name="text">
+      <string>Create Marksuggestions</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="1">
+    <widget class="QSpinBox" name="cancle_number_spinBox"/>
    </item>
   </layout>
  </widget>
@@ -125,9 +176,10 @@
   <tabstop>service_lineEdit</tabstop>
   <tabstop>username_lineEdit</tabstop>
   <tabstop>password_lineEdit</tabstop>
+  <tabstop>download_pushButton</tabstop>
   <tabstop>checkBox</tabstop>
   <tabstop>studentlist_lineEdit</tabstop>
-  <tabstop>marksuggestion_checkBox</tabstop>
+  <tabstop>open_pushButton</tabstop>
  </tabstops>
  <resources/>
  <connections>

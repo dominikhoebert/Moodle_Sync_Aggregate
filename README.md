@@ -30,17 +30,19 @@ Token benötigt.
 
 ## TODOs
 
-- ~~Kompetenzzähler~~
-- ~~Berechnung und Streichungen von WH/Wiederholung/SMÜ~~
-- add Cancel Number in settings
-- add load button
+- Using LDAP for studentlist
 - Download multiple and export into one file
 - Download Progress Bar (multiprocessing?)
 - Download and Merge Grundkompetenzüberprüfungen
 - Create Grundkompetenzüberprüfungen list
-- Using LDAP for studentlist
-- Opendialog for studentlistpath
 - andere Berechnungen?
+- ~~Kompetenzzähler~~
+- ~~Berechnung und Streichungen von WH/Wiederholung/SMÜ~~
+- ~~add Cancel Number in settings~~
+- ~~add load and merge button~~
+- ~~add open... button for studentlistpath~~
+- ~~add download LDAP Button in settings~~
+- ~~Opendialog for studentlistpath~~
 - ~~Create Negative Competences Column (ie. 1.1;1.3)~~
 - ~~Competences Names to json file~~
 - ~~Login to Moodle using Username and Password~~

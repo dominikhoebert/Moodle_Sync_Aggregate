@@ -1,7 +1,8 @@
 import sys
-import datetime
+from datetime import datetime
 from locale import atof, setlocale, LC_NUMERIC
 import json
+import os
 
 import pandas as pd
 from openpyxl import Workbook, worksheet
@@ -24,6 +25,7 @@ from conditional_formating import custom_conditional_formatting
 
 # Pyinstaller
 # pyinstaller -n Moodle_Sync_Aggregate --onefile --windowed main_app.py
+
 
 def list_to_float(grade_list):
     return_list = []
@@ -98,15 +100,15 @@ class Window(QMainWindow, Ui_MainWindow):
         self.competence_counter = True
         self.wh_calculation = True
         self.number_cancel = self.settings.value('number_cancel', 2)
-        if self.use_studentlist == 'true' or self.use_studentlist == True:
+        if self.use_studentlist == 'true' or self.use_studentlist is True:
             self.use_studentlist = True
         else:
             self.use_studentlist = False
-        if self.create_competence_columns == 'true' or self.create_competence_columns == True:
+        if self.create_competence_columns == 'true' or self.create_competence_columns is True:
             self.create_competence_columns = True
         else:
             self.create_competence_columns = False
-        if self.mark_suggestion == 'true' or self.mark_suggestion == True:
+        if self.mark_suggestion == 'true' or self.mark_suggestion is True:
             self.mark_suggestion = True
         else:
             self.mark_suggestion = False
@@ -116,6 +118,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.service = self.settings.value("service", "tgm_hoedmoodlesync")
         self.username = self.settings.value("username", None)
         self.password = self.settings.value("password", None)
+        self.ldap_username_extension = self.settings.value("ldap_username_extension", '@tgm.ac.at')
         self.student_list_path = self.settings.value("studentlist",
                                                      "~/tgm - Die Schule der Technik/HIT - Abteilung für Informations"
                                                      "technologie - Dokumente/Organisation/Tools/studentlistv2.csv")
@@ -437,12 +440,12 @@ class Window(QMainWindow, Ui_MainWindow):
                         c_cell.value += formular.replace('#', str(c_cell.row))
 
             elif module == '∅SMÜ' and self.wh_calculation:
-                #=(SUM(F2:L2)-SMALL(F2:L2; 1)-SMALL(F2:L2; 2))/5
+                # =(SUM(F2:L2)-SMALL(F2:L2; 1)-SMALL(F2:L2; 2))/5
                 formular_range = "#,".join(wh_letter_list) + "#"
                 formular = f"(SUM({formular_range})"
                 for i in range(self.number_cancel):
-                    formular += f"-SMALL(({formular_range}), {i+1})"
-                formular += f")/{len(wh_letter_list)-self.number_cancel}"
+                    formular += f"-SMALL(({formular_range}), {i + 1})"
+                formular += f")/{len(wh_letter_list) - self.number_cancel}"
                 for c_cell in ws[cell.column_letter]:
                     if c_cell.value == '=':
                         c_cell.value += formular.replace('#', str(c_cell.row))
@@ -457,7 +460,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 ws[f'{cell.column_letter}{max_row + 3}'].value = 10
 
         directory = self.settings.value('dir', "")
-        ct = datetime.datetime.now()
+        ct = datetime.now()
         filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
 
         file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
@@ -467,23 +470,28 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def open_settings(self):
         settings = SettingsDlg(self.url, self.service, self.username, self.password, self.use_studentlist,
-                               self.student_list_path, self.mark_suggestion, parent=self)
+                               self.student_list_path, self.mark_suggestion, self.ldap_username_extension,
+                               self.number_cancel, parent=self)
         if settings.exec():
             self.url = settings.ui.url_lineEdit.text()
             self.service = settings.ui.service_lineEdit.text()
             self.username = settings.ui.username_lineEdit.text()
             self.password = settings.ui.password_lineEdit.text()
+            self.ldap_username_extension = settings.ui.extension_lineEdit.text()
             self.use_studentlist = settings.ui.checkBox.isChecked()
             self.student_list_path = settings.ui.studentlist_lineEdit.text()
             self.mark_suggestion = settings.ui.marksuggestion_checkBox.isChecked()
+            self.number_cancel = settings.ui.cancle_number_spinBox.value()
 
             self.settings.setValue("url", self.url)
             self.settings.setValue("service", self.service)
             self.settings.setValue("username", self.username)
             self.settings.setValue("password", self.password)
+            self.settings.setValue("ldap_username_extension", self.ldap_username_extension)
             self.settings.setValue("use_studentlist", self.use_studentlist)
             self.settings.setValue("studentlist", self.student_list_path)
             self.settings.setValue("mark_suggestion", self.mark_suggestion)
+            self.settings.setValue("number_cancel", self.number_cancel)
         self.login()
 
     def all_none_checkbox_changed(self):
@@ -499,7 +507,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
 class SettingsDlg(QDialog):
     def __init__(self, url, service, username, password, use_studentlist, studentlistpath, mark_suggestion,
-                 parent=None):
+                 username_extension, cancle_number, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
@@ -511,10 +519,29 @@ class SettingsDlg(QDialog):
         self.ui.service_lineEdit.setText(service)
         self.ui.username_lineEdit.setText(username)
         self.ui.password_lineEdit.setText(password)
+        self.ui.extension_lineEdit.setText(username_extension)
         self.ui.studentlist_lineEdit.setText(studentlistpath)
+        self.ui.open_pushButton.clicked.connect(self.open_dialog)
+        self.ui.download_pushButton.clicked.connect(self.download)
+        self.ui.cancle_number_spinBox.setValue(cancle_number)
+        try:
+            time = datetime.fromtimestamp(os.path.getmtime("ldap_studentlist.csv"))  # TODO test in windows
+        except FileNotFoundError:
+            time = "File not found!"
+        self.ui.last_download_label.setText("last download: " + time.strftime('%Y-%m-%d %H:%M'))
 
     def checkbox_changed(self):
         self.ui.studentlist_lineEdit.setEnabled(self.ui.checkBox.isChecked())
+
+    def open_dialog(self):
+        file, _ = QFileDialog.getOpenFileName(self, "Open Studentlist", self.ui.studentlist_lineEdit.text(),
+                                              "CSV files (*.csv)")
+        if file:
+            self.ui.studentlist_lineEdit.setText(file)
+
+    def download(self):
+        # TODO
+        pass
 
 
 if __name__ == '__main__':

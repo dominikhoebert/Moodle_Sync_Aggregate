@@ -17,5 +17,5 @@ for file in os.listdir():
             students['Klasse'].append(klasse)
 
 data = pd.DataFrame.from_dict(students)
-data.to_csv("studentlist.csv", index=False)
+data.to_csv("ldap_studentlist.csv", index=False)
 print(data)

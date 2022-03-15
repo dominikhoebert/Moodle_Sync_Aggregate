@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\moodle_sync_aggregate.ui'
+# Form implementation generated from reading ui file 'moodle_sync_aggregate.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -60,6 +60,12 @@ class Ui_MainWindow(object):
         self.download_pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.download_pushButton.setObjectName("download_pushButton")
         self.horizontalLayout_2.addWidget(self.download_pushButton)
+        self.load_pushButton = QtWidgets.QPushButton(self.centralwidget)
+        self.load_pushButton.setObjectName("load_pushButton")
+        self.horizontalLayout_2.addWidget(self.load_pushButton)
+        self.merge_pushButton = QtWidgets.QPushButton(self.centralwidget)
+        self.merge_pushButton.setObjectName("merge_pushButton")
+        self.horizontalLayout_2.addWidget(self.merge_pushButton)
         self.export_pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.export_pushButton.setCheckable(False)
         self.export_pushButton.setObjectName("export_pushButton")
@@ -67,7 +73,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addLayout(self.horizontalLayout_2, 1, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1014, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1014, 24))
         self.menubar.setObjectName("menubar")
         self.menuDatei = QtWidgets.QMenu(self.menubar)
         self.menuDatei.setObjectName("menuDatei")
@@ -82,6 +88,12 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        MainWindow.setTabOrder(self.courselistWidget, self.all_none_checkBox)
+        MainWindow.setTabOrder(self.all_none_checkBox, self.reload_pushButton)
+        MainWindow.setTabOrder(self.reload_pushButton, self.download_pushButton)
+        MainWindow.setTabOrder(self.download_pushButton, self.load_pushButton)
+        MainWindow.setTabOrder(self.load_pushButton, self.merge_pushButton)
+        MainWindow.setTabOrder(self.merge_pushButton, self.export_pushButton)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -91,6 +103,18 @@ class Ui_MainWindow(object):
         self.all_none_checkBox.setText(_translate("MainWindow", "All/None"))
         self.reload_pushButton.setText(_translate("MainWindow", "Reload Courses"))
         self.download_pushButton.setText(_translate("MainWindow", "Download Grades"))
+        self.load_pushButton.setText(_translate("MainWindow", "Load"))
+        self.merge_pushButton.setText(_translate("MainWindow", "Load and merge"))
         self.export_pushButton.setText(_translate("MainWindow", "Export"))
         self.menuDatei.setTitle(_translate("MainWindow", "File"))
         self.actionSettings.setText(_translate("MainWindow", "Settings"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())
