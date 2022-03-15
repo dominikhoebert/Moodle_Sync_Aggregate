@@ -2,3 +2,4 @@ requests~=2.26.0
 pandas~=1.3.5
 openpyxl~=3.0.9
 PyQt5~=5.15.6
+python-ldap~=3.4.0

@@ -27,6 +27,7 @@ Token benötigt.
 - openpyxl 3.0.9
 - requests 2.26.0
 - pandas 1.3.5
+- python-ldap 3.4.0
 
 ## TODOs
 
