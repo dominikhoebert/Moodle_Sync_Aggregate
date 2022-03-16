@@ -31,7 +31,7 @@ Token benötigt.
 
 ## TODOs
 
-- Using LDAP for studentlist
+- ~~Using LDAP for studentlist~~
 - Download multiple and export into one file
 - Download Progress Bar (multiprocessing?)
 - Download and Merge Grundkompetenzüberprüfungen

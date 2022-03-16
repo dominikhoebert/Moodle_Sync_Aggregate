@@ -121,6 +121,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.student_list_path = self.settings.value("studentlist",
                                                      "~/tgm - Die Schule der Technik/HIT - Abteilung für Informations"
                                                      "technologie - Dokumente/Organisation/Tools/studentlistv2.csv")
+        self.ldap_studentlistpath = "ldap_studentlist.csv"  # TODO to settings?
         self.moodle = None
 
         self.login()
@@ -157,11 +158,16 @@ class Window(QMainWindow, Ui_MainWindow):
         self.current_course = course.text()
 
     def download_grades(self):
-        if self.use_studentlist:
+        try:
+            self.student_list = pd.read_csv(self.ldap_studentlistpath)
+        except FileNotFoundError as e:
+            print(f"No ldap studentlist at {self.ldap_studentlistpath}")
+
+        if self.use_studentlist and self.student_list is not None:
             try:
                 self.student_list = pd.read_csv(self.student_list_path)
             except Exception as e:
-                print("Failed to load Student List CSV. Please check Settings.", e)
+                print(f"Failed to load Student List CSV at {self.student_list_path}. Please check Settings.", e)
 
         if self.current_course is None:
             self.courselistWidget.setCurrentRow(0)
@@ -470,7 +476,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def open_settings(self):
         settings = SettingsDlg(self.url, self.service, self.username, self.password, self.use_studentlist,
                                self.student_list_path, self.mark_suggestion, self.ldap_username_extension,
-                               self.number_cancel, parent=self)
+                               self.number_cancel, filename=self.ldap_studentlistpath, parent=self)
         if settings.exec():
             self.url = settings.ui.url_lineEdit.text()
             self.service = settings.ui.service_lineEdit.text()

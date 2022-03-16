@@ -5,7 +5,7 @@ import csv
 import pandas as pd
 
 
-def ldap_studenlist_download(username: str, password: str):
+def ldap_studenlist_download(username: str, password: str, filename: str):
     ldap_connection = ldap.initialize('ldap://dc-01.tgm.ac.at:389', bytes_mode=False)  # TODO add to settings
     ldap_connection.simple_bind_s(username, password)
 
@@ -29,7 +29,7 @@ def ldap_studenlist_download(username: str, password: str):
         dataframe_list.append([r[1][1][x][0].decode('UTF-8') for x in column_names])
 
     df = pd.DataFrame(dataframe_list, columns=column_names)
-    df.to_csv('ldap_studentlist.csv', index=False, quoting=csv.QUOTE_NONNUMERIC)
+    df.to_csv(filename, index=False, quoting=csv.QUOTE_NONNUMERIC)
 
 
 if __name__ == '__main__':

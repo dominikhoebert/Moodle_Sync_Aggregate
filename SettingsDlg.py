@@ -9,8 +9,9 @@ from ldap_download import ldap_studenlist_download
 
 class SettingsDlg(QDialog):
     def __init__(self, url, service, username, password, use_studentlist, studentlistpath, mark_suggestion,
-                 username_extension, cancle_number, parent=None):
+                 username_extension, cancle_number, filename="ldap_studentlist.csv", parent=None):
         super().__init__(parent)
+        self.filename = filename
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self.ui.checkBox.setChecked(use_studentlist)
@@ -26,11 +27,7 @@ class SettingsDlg(QDialog):
         self.ui.open_pushButton.clicked.connect(self.open_dialog)
         self.ui.download_pushButton.clicked.connect(self.download)
         self.ui.cancle_number_spinBox.setValue(cancle_number)
-        try:
-            time = datetime.fromtimestamp(os.path.getmtime("ldap_studentlist.csv"))  # TODO test in windows
-        except FileNotFoundError:
-            time = "File not found!"
-        self.ui.last_download_label.setText("last download: " + time.strftime('%Y-%m-%d %H:%M'))
+        self.update_studentlistlabel()
 
     def checkbox_changed(self):
         self.ui.studentlist_lineEdit.setEnabled(self.ui.checkBox.isChecked())
@@ -43,4 +40,12 @@ class SettingsDlg(QDialog):
 
     def download(self):
         ldap_studenlist_download(self.ui.username_lineEdit.text() + self.ui.extension_lineEdit.text(),
-                                 self.ui.password_lineEdit.text())
+                                 self.ui.password_lineEdit.text(), )
+        self.update_studentlistlabel()
+
+    def update_studentlistlabel(self):
+        try:
+            time = datetime.fromtimestamp(os.path.getmtime(self.filename))  # TODO test in windows
+        except FileNotFoundError:
+            time = "File not found!"
+        self.ui.last_download_label.setText("last download: " + time.strftime('%Y-%m-%d %H:%M'))
