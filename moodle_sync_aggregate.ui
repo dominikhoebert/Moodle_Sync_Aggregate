@@ -86,16 +86,16 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="load_pushButton">
+       <widget class="QPushButton" name="save_pushButton">
         <property name="text">
-         <string>Load</string>
+         <string>Save</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="merge_pushButton">
         <property name="text">
-         <string>Load and merge</string>
+         <string>Merge</string>
         </property>
        </widget>
       </item>
@@ -142,7 +142,7 @@
   <tabstop>all_none_checkBox</tabstop>
   <tabstop>reload_pushButton</tabstop>
   <tabstop>download_pushButton</tabstop>
-  <tabstop>load_pushButton</tabstop>
+  <tabstop>save_pushButton</tabstop>
   <tabstop>merge_pushButton</tabstop>
   <tabstop>export_pushButton</tabstop>
  </tabstops>

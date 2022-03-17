@@ -66,6 +66,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
         self.export_pushButton.setEnabled(False)
+        self.save_pushButton.setEnabled(False)
+        self.merge_pushButton.setEnabled(False)
         self.download_pushButton.setEnabled(False)
 
         # Event Handlers
@@ -75,11 +77,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self.reload_pushButton.clicked.connect(self.download_courses)
         self.actionSettings.triggered.connect(self.open_settings)
         self.all_none_checkBox.stateChanged.connect(self.all_none_checkbox_changed)
+        self.save_pushButton.clicked.connect(self.save_grades)
+        self.merge_pushButton.clicked.connect(self.merge)
 
         # Data
         self.current_course = None  # Text
         self.courses = None  # Dict Course name:id
         self.grades = None  # Dataframe of Student name, Modules and Grades
+        self.pages = []  # List of Grades Dataframes to export
         self.checkboxes = None  # List of Checkboxes for Modules
         self.student_list = None  # Dataframe Name Klasse
         self.competences = None  # Dict competence number as string eg. '21' (for 2.1) to Module Names
@@ -123,6 +128,7 @@ class Window(QMainWindow, Ui_MainWindow):
                                                      "technologie - Dokumente/Organisation/Tools/studentlistv2.csv")
         self.ldap_studentlistpath = "ldap_studentlist.csv"  # TODO to settings?
         self.moodle = None
+        self.wb = Workbook()
 
         self.login()
 
@@ -161,7 +167,7 @@ class Window(QMainWindow, Ui_MainWindow):
         try:
             self.student_list = pd.read_csv(self.ldap_studentlistpath)
         except FileNotFoundError as e:
-            print(f"No ldap studentlist at {self.ldap_studentlistpath}")
+            print(f"No ldap studentlist at {self.ldap_studentlistpath}", e)
 
         if self.use_studentlist and self.student_list is not None:
             try:
@@ -262,11 +268,27 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.tasks_verticalLayout.addWidget(cb)
                 self.checkboxes.append(cb)
 
+        self.save_pushButton.setEnabled(True)
+        if len(self.pages) > 0:
+            self.export_pushButton.setEnabled(True)
         self.export_pushButton.setEnabled(True)
 
+    def remove_columns(self, dataframe):
+        columns_to_drop = [cb.text() for cb in self.checkboxes if cb.checkState() == 0]
+        return dataframe.drop(columns_to_drop, axis=1)
+
+    def save_grades(self):
+        self.pages.append(self.remove_columns(self.grades))
+
+    def merge(self):
+        self.remove_columns(self.grades)
+        # TODO code functionality
+        # open merge dialog
+        # create saved pages checkboxes to merge to
+        # merge
+
     def export_grades(self):
-        wb = Workbook()
-        ws = wb.active
+        ws = self.wb.active
 
         for row in dataframe_to_rows(self.grades, index=False, header=True):
             ws.append(list_to_float(row))
@@ -470,7 +492,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
         if file:
-            wb.save(file)
+            self.wb.save(file)
             self.settings.setValue("dir", file[:file.rfind("/")])
 
     def open_settings(self):

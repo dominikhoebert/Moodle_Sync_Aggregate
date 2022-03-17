@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+from openpyxl import Workbook, worksheet
 
 if __name__ == '__main__':
     with open('data/credentials.json', 'r') as f:
@@ -10,10 +11,8 @@ if __name__ == '__main__':
     password = data['password']
     print(url, key, username, password)
 
-    try:
-        student_list = pd.read_csv("data/studentlist2.csv")
-    except Exception as e:
-        print("Failed to load Student List CSV. Please check Settings.", e)
+    df1 = pd.DataFrame([['a', 'b'], ['x', 'y']], columns=['first', 'sec'])
+    df2 = pd.DataFrame([['c', 'd'], ['z', 'z']], columns=['first', 'sec'])
 
-    print(student_list)
+    wb
 
