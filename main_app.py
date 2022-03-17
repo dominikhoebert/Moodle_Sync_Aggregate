@@ -84,7 +84,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.current_course = None  # Text
         self.courses = None  # Dict Course name:id
         self.grades = None  # Dataframe of Student name, Modules and Grades
-        self.pages = []  # List of Grades Dataframes to export
+        self.pages = {}  # dict of course names to Grades Dataframes
         self.checkboxes = None  # List of Checkboxes for Modules
         self.student_list = None  # Dataframe Name Klasse
         self.competences = None  # Dict competence number as string eg. '21' (for 2.1) to Module Names
@@ -128,7 +128,6 @@ class Window(QMainWindow, Ui_MainWindow):
                                                      "technologie - Dokumente/Organisation/Tools/studentlistv2.csv")
         self.ldap_studentlistpath = "ldap_studentlist.csv"  # TODO to settings?
         self.moodle = None
-        self.wb = Workbook()
 
         self.login()
 
@@ -270,7 +269,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.save_pushButton.setEnabled(True)
         if len(self.pages) > 0:
-            self.export_pushButton.setEnabled(True)
+            self.merge_pushButton.setEnabled(True)
         self.export_pushButton.setEnabled(True)
 
     def remove_columns(self, dataframe):
@@ -278,7 +277,7 @@ class Window(QMainWindow, Ui_MainWindow):
         return dataframe.drop(columns_to_drop, axis=1)
 
     def save_grades(self):
-        self.pages.append(self.remove_columns(self.grades))
+        self.pages[self.current_course] = self.remove_columns(self.grades)
 
     def merge(self):
         self.remove_columns(self.grades)
@@ -288,211 +287,219 @@ class Window(QMainWindow, Ui_MainWindow):
         # merge
 
     def export_grades(self):
-        ws = self.wb.active
 
-        for row in dataframe_to_rows(self.grades, index=False, header=True):
-            ws.append(list_to_float(row))
+        if len(self.pages) == 0:
+            self.save_grades()
 
-        for i, cb in enumerate(self.checkboxes):
-            if cb.checkState() == 0:
-                for cell in ws[1]:
-                    if cell.value == cb.text():
-                        ws.delete_cols(cell.column, 1)
+        wb = Workbook()
+        for page_name, grades_dataframe in self.pages.items():
+            if wb.sheetnames[0] == 'Sheet':
+                ws = wb.active
+                ws.title = page_name
+            else:
+                ws = wb.create_sheet(page_name)
 
-        ws.column_dimensions['A'].width = 35
-        ws.column_dimensions['B'].width = 6
-        ws.column_dimensions['C'].width = 8
-        ws.column_dimensions['D'].width = 10
+            for row in dataframe_to_rows(grades_dataframe, index=False, header=True):
+                ws.append(list_to_float(row))
 
-        for i in range(5, ws.max_column + 1):
-            ws.column_dimensions[get_column_letter(i)].width = 4
+            ws.column_dimensions['A'].width = 35
+            ws.column_dimensions['B'].width = 6
+            ws.column_dimensions['C'].width = 8
+            ws.column_dimensions['D'].width = 10
 
-        ws.freeze_panes = ws['B1']
+            for i in range(5, ws.max_column + 1):
+                ws.column_dimensions[get_column_letter(i)].width = 4
 
-        tab = worksheet.table.Table(displayName="Table1", ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
-        tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
-                                                            showColumnStripes=False)
-        ws.add_table(tab)
+            ws.freeze_panes = ws['B1']
 
-        max_row = ws.max_row
-        comp_dict = {'GK': [], 'GEK': [], 'EK': []}
-        comp_list = []
-        wh_letter_list = []
-        for cell in ws[1]:
-            module = str(cell.value)
-            cell_range = f"{cell.column_letter}2:{cell.column_letter}{max_row}"
-            if module.startswith("GK"):
-                custom_conditional_formatting(ws, cell_range, 'GK')
-                comp_dict['GK'].append(cell.column_letter)
-            elif module.startswith("EK"):
-                custom_conditional_formatting(ws, cell_range, 'EK')
-                comp_dict['EK'].append(cell.column_letter)
-            elif module.startswith("GEK"):
-                custom_conditional_formatting(ws, cell_range, 'GEK')
-                comp_dict['GEK'].append(cell.column_letter)
+            tab = worksheet.table.Table(displayName="Table1", ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
+            tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
+                                                                showColumnStripes=False)
+            ws.add_table(tab)
 
-            elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
-                wh_letter_list.append(cell.column_letter)
-                for cx in ws[cell.column_letter]:
-                    if cx.value == '-':
-                        cx.value = 0.0
-                custom_conditional_formatting(ws, cell_range, type='points',
-                                              start=f'${cell.column_letter}${max_row + 2}',
-                                              end=f'${cell.column_letter}${max_row + 3}')
-                ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
-                ws[f'A{max_row + 2}'].font = Font(bold=True)
-                ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
-                ws[f'A{max_row + 3}'].font = Font(bold=True)
-                ws[f'{cell.column_letter}{max_row + 2}'].value = 6
-                ws[f'{cell.column_letter}{max_row + 3}'].value = 10
+            max_row = ws.max_row
+            comp_dict = {'GK': [], 'GEK': [], 'EK': []}
+            comp_list = []
+            wh_letter_list = []
+            for cell in ws[1]:
+                module = str(cell.value)
+                cell_range = f"{cell.column_letter}2:{cell.column_letter}{max_row}"
+                if module.startswith("GK"):
+                    custom_conditional_formatting(ws, cell_range, 'GK')
+                    comp_dict['GK'].append(cell.column_letter)
+                elif module.startswith("EK"):
+                    custom_conditional_formatting(ws, cell_range, 'EK')
+                    comp_dict['EK'].append(cell.column_letter)
+                elif module.startswith("GEK"):
+                    custom_conditional_formatting(ws, cell_range, 'GEK')
+                    comp_dict['GEK'].append(cell.column_letter)
 
-            elif len(module) > 1 and module[1] == '.':  # if Kompetenz
-                custom_conditional_formatting(ws, cell_range, 'K')
-                comp_list.append(cell.column_letter)
-                for c_cell in ws[cell.column_letter]:
-                    if c_cell.value == '=':
-                        c_cell.value = '=' + ' & ";" & '.join(
-                            [f"{get_column_for_module(ws, c)}{c_cell.row}" for c in
-                             self.competences[self.competence_helper[module]]])
+                elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
+                    wh_letter_list.append(cell.column_letter)
+                    for cx in ws[cell.column_letter]:
+                        if cx.value == '-':
+                            cx.value = 0.0
+                    custom_conditional_formatting(ws, cell_range, type='points',
+                                                  start=f'${cell.column_letter}${max_row + 2}',
+                                                  end=f'${cell.column_letter}${max_row + 3}')
+                    ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
+                    ws[f'A{max_row + 2}'].font = Font(bold=True)
+                    ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
+                    ws[f'A{max_row + 3}'].font = Font(bold=True)
+                    ws[f'{cell.column_letter}{max_row + 2}'].value = 6
+                    ws[f'{cell.column_letter}{max_row + 3}'].value = 10
 
-            elif module == 'Punkte' and self.mark_suggestion:
-                for c_cell in ws[cell.column_letter]:
-                    if c_cell.value == '=':
-                        for module_type, module_letter_list in comp_dict.items():
-                            for module_letter in module_letter_list:
-                                affected_cell = f"SUMPRODUCT(--EXACT({module_letter}{c_cell.row}"
-                                c_cell.value += f'{affected_cell},"GKü"))*-1+'
-                                c_cell.value += f'{affected_cell},"EKü"))+'
-                                c_cell.value += f'{affected_cell},"EKv"))*2+'
-                                if module_type == 'GK':
-                                    c_cell.value += f'{affected_cell},"ü"))*-1+'
-                                elif module_type == 'GEK':
-                                    c_cell.value += f'{affected_cell},"ü"))*-1+'
-                                elif module_type == 'EK':
-                                    c_cell.value += f'{affected_cell},"ü"))+'
-                                    c_cell.value += f'{affected_cell},"v"))*2+'
-                        c_cell.value = c_cell.value[:-1]
-                custom_conditional_formatting(ws, cell_range, type='scale')
+                elif len(module) > 1 and module[1] == '.':  # if Kompetenz
+                    custom_conditional_formatting(ws, cell_range, 'K')
+                    comp_list.append(cell.column_letter)
+                    for c_cell in ws[cell.column_letter]:
+                        if c_cell.value == '=':
+                            c_cell.value = '=' + ' & ";" & '.join(
+                                [f"{get_column_for_module(ws, c)}{c_cell.row}" for c in
+                                 self.competences[self.competence_helper[module]]])
 
-            elif module == 'Notenvorschlag' and self.mark_suggestion:
-                sc = ws.max_column + 3  # start column
+                elif module == 'Punkte' and self.mark_suggestion:
+                    for c_cell in ws[cell.column_letter]:
+                        if c_cell.value == '=':
+                            for module_type, module_letter_list in comp_dict.items():
+                                for module_letter in module_letter_list:
+                                    affected_cell = f"SUMPRODUCT(--EXACT({module_letter}{c_cell.row}"
+                                    c_cell.value += f'{affected_cell},"GKü"))*-1+'
+                                    c_cell.value += f'{affected_cell},"EKü"))+'
+                                    c_cell.value += f'{affected_cell},"EKv"))*2+'
+                                    if module_type == 'GK':
+                                        c_cell.value += f'{affected_cell},"ü"))*-1+'
+                                    elif module_type == 'GEK':
+                                        c_cell.value += f'{affected_cell},"ü"))*-1+'
+                                    elif module_type == 'EK':
+                                        c_cell.value += f'{affected_cell},"ü"))+'
+                                        c_cell.value += f'{affected_cell},"v"))*2+'
+                            c_cell.value = c_cell.value[:-1]
+                    custom_conditional_formatting(ws, cell_range, type='scale')
 
-                marks_table = [['Note', 'Schlüssel', 'Anz.', 'P', '', 'Komp.', 'Anz.'],
-                               [5, '', '', '', '', 'GK', len(comp_dict['GK'])],
-                               [4, 'alle GK mind. ü', f'={get_column_letter(sc + 6)}2+{get_column_letter(sc + 6)}3',
-                                f'={get_column_letter(sc + 2)}3*-1', '*', 'GEK', len(comp_dict['GEK'])],
-                               [3, 'mind. GKv', 6, f'={get_column_letter(sc + 2)}4-{get_column_letter(sc + 2)}3', '',
-                                'EK', len(comp_dict['EK'])],
-                               [2, 'mind. EKü', 6, f'={get_column_letter(sc + 2)}5', '', '', ''],
-                               [1, 'mind. EKv', 6, f'={get_column_letter(sc + 2)}6*2', '', '', '']]
+                elif module == 'Notenvorschlag' and self.mark_suggestion:
+                    sc = ws.max_column + 3  # start column
 
-                for row_number, rows in enumerate(marks_table):
-                    for column_number, cell_value in enumerate(rows):
-                        ws[f'{get_column_letter(sc + column_number)}{row_number + 1}'].value = cell_value
+                    marks_table = [['Note', 'Schlüssel', 'Anz.', 'P', '', 'Komp.', 'Anz.'],
+                                   [5, '', '', '', '', 'GK', len(comp_dict['GK'])],
+                                   [4, 'alle GK mind. ü', f'={get_column_letter(sc + 6)}2+{get_column_letter(sc + 6)}3',
+                                    f'={get_column_letter(sc + 2)}3*-1', '*', 'GEK', len(comp_dict['GEK'])],
+                                   [3, 'mind. GKv', 6, f'={get_column_letter(sc + 2)}4-{get_column_letter(sc + 2)}3',
+                                    '',
+                                    'EK', len(comp_dict['EK'])],
+                                   [2, 'mind. EKü', 6, f'={get_column_letter(sc + 2)}5', '', '', ''],
+                                   [1, 'mind. EKv', 6, f'={get_column_letter(sc + 2)}6*2', '', '', '']]
 
-                tab = worksheet.table.Table(displayName="Table2",
-                                            ref=f"{get_column_letter(sc)}1:{get_column_letter(sc + 3)}6")
-                tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium5", showRowStripes=False,
-                                                                    showColumnStripes=False)
-                ws.add_table(tab)
+                    for row_number, rows in enumerate(marks_table):
+                        for column_number, cell_value in enumerate(rows):
+                            ws[f'{get_column_letter(sc + column_number)}{row_number + 1}'].value = cell_value
 
-                tab = worksheet.table.Table(displayName="Table3",
-                                            ref=f"{get_column_letter(sc + 5)}1:{get_column_letter(sc + 6)}4")
-                tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium6", showRowStripes=False,
-                                                                    showColumnStripes=False)
-                ws.add_table(tab)
+                    tab = worksheet.table.Table(displayName="Table2",
+                                                ref=f"{get_column_letter(sc)}1:{get_column_letter(sc + 3)}6")
+                    tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium5", showRowStripes=False,
+                                                                        showColumnStripes=False)
+                    ws.add_table(tab)
 
-                marks_table_column_dimensions = [8, 15, 8, 5, 5, 10, 8]
-                for col, dim in enumerate(marks_table_column_dimensions):
-                    ws.column_dimensions[get_column_letter(sc + col)].width = dim
+                    tab = worksheet.table.Table(displayName="Table3",
+                                                ref=f"{get_column_letter(sc + 5)}1:{get_column_letter(sc + 6)}4")
+                    tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium6", showRowStripes=False,
+                                                                        showColumnStripes=False)
+                    ws.add_table(tab)
 
-                custom_conditional_formatting(ws, f'{get_column_letter(sc)}2:{get_column_letter(sc)}6', type='marks')
+                    marks_table_column_dimensions = [8, 15, 8, 5, 5, 10, 8]
+                    for col, dim in enumerate(marks_table_column_dimensions):
+                        ws.column_dimensions[get_column_letter(sc + col)].width = dim
 
-                mcl = f'${get_column_letter(sc)}$'  # mark_column_letter
-                kpcl = f'${get_column_letter(sc + 3)}$'  # key_points_column_letter
+                    custom_conditional_formatting(ws, f'{get_column_letter(sc)}2:{get_column_letter(sc)}6',
+                                                  type='marks')
 
-                competences_letters_list = [*comp_dict['GK'], *comp_dict['GEK']]
-                formular_string = '=_xlfn.IFS(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},'
+                    mcl = f'${get_column_letter(sc)}$'  # mark_column_letter
+                    kpcl = f'${get_column_letter(sc + 3)}$'  # key_points_column_letter
 
-                for c_cell in ws[cell.column_letter]:
-                    if c_cell.value == '=':
-                        c_cell.font = Font(bold=True)
-                        pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
-                        cf = ' & '.join([f'{letter}{c_cell.row}' for letter in competences_letters_list])
-                        c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,' \
-                                                              f'{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
-                custom_conditional_formatting(ws, cell_range, type='marks')
+                    competences_letters_list = [*comp_dict['GK'], *comp_dict['GEK']]
+                    formular_string = '=_xlfn.IFS(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},'
 
-            elif module == 'Gruppen':
-                custom_conditional_formatting(ws, cell_range, type='group')
+                    for c_cell in ws[cell.column_letter]:
+                        if c_cell.value == '=':
+                            c_cell.font = Font(bold=True)
+                            pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
+                            cf = ' & '.join([f'{letter}{c_cell.row}' for letter in competences_letters_list])
+                            c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,' \
+                                                                  f'{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
+                    custom_conditional_formatting(ws, cell_range, type='marks')
 
-            elif module == 'Negative Kompetenzen' and self.negative_competences:
-                for c_cell in ws[cell.column_letter]:
-                    if c_cell.value == '=':
-                        formular_parts = []
-                        for comp_letter in comp_list:
-                            comp_number = ws[f'{comp_letter}1'].value[:3]
-                            formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
-                                                  f'{comp_letter}{c_cell.row})))>0,"{comp_number};","")')
-                        c_cell.value += " & ".join(formular_parts)
-                ws.column_dimensions[cell.column_letter].width = 14
+                elif module == 'Gruppen':
+                    custom_conditional_formatting(ws, cell_range, type='group')
 
-            elif module in ['ΣN', 'ΣGKü', 'ΣGKv', 'ΣEKü', 'ΣEKv'] and self.competence_counter:
-                custom_conditional_formatting(ws, cell_range, type='sum', competence=module[1:])
-                col_letters = []
-                search_for = []
-                if module == 'ΣN' or module == 'ΣGKü' or module == 'ΣGKv':
-                    col_letters.extend(comp_dict['GK'])
-                    col_letters.extend(comp_dict['GEK'])
-                    if module == 'ΣN':
-                        search_for = ['n', '-']
-                    if module == 'ΣGKü':
-                        search_for = ['ü', 'GKü']
-                    elif module == 'ΣGKv':
-                        search_for = ['v', 'GKv']
-                elif module == 'ΣEKü' or module == 'ΣEKv':
-                    col_letters.extend(comp_dict['EK'])
-                    col_letters.extend(comp_dict['GEK'])
-                    if module == 'ΣEKü':
-                        search_for = ['ü', 'EKü']
-                    elif module == 'ΣEKv':
-                        search_for = ['v', 'EKv']
-                formular_parts = []
-                for letter in col_letters:
-                    for sf in search_for:
-                        formular_parts.append(f'SUMPRODUCT(--EXACT({letter}#,"{sf}"))')
-                formular = "+".join(formular_parts)
-                for c_cell in ws[cell.column_letter]:
-                    if c_cell.value == '=':
-                        c_cell.value += formular.replace('#', str(c_cell.row))
+                elif module == 'Negative Kompetenzen' and self.negative_competences:
+                    for c_cell in ws[cell.column_letter]:
+                        if c_cell.value == '=':
+                            formular_parts = []
+                            for comp_letter in comp_list:
+                                comp_number = ws[f'{comp_letter}1'].value[:3]
+                                formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
+                                                      f'{comp_letter}{c_cell.row})))>0,"{comp_number};","")')
+                            c_cell.value += " & ".join(formular_parts)
+                    ws.column_dimensions[cell.column_letter].width = 14
 
-            elif module == '∅SMÜ' and self.wh_calculation:
-                # =(SUM(F2:L2)-SMALL(F2:L2; 1)-SMALL(F2:L2; 2))/5
-                formular_range = "#,".join(wh_letter_list) + "#"
-                formular = f"(SUM({formular_range})"
-                for i in range(self.number_cancel):
-                    formular += f"-SMALL(({formular_range}), {i + 1})"
-                formular += f")/{len(wh_letter_list) - self.number_cancel}"
-                for c_cell in ws[cell.column_letter]:
-                    if c_cell.value == '=':
-                        c_cell.value += formular.replace('#', str(c_cell.row))
-                custom_conditional_formatting(ws, cell_range, type='points',
-                                              start=f'${cell.column_letter}${max_row + 2}',
-                                              end=f'${cell.column_letter}${max_row + 3}')
-                ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
-                ws[f'A{max_row + 2}'].font = Font(bold=True)
-                ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
-                ws[f'A{max_row + 3}'].font = Font(bold=True)
-                ws[f'{cell.column_letter}{max_row + 2}'].value = 6
-                ws[f'{cell.column_letter}{max_row + 3}'].value = 10
+                elif module in ['ΣN', 'ΣGKü', 'ΣGKv', 'ΣEKü', 'ΣEKv'] and self.competence_counter:
+                    custom_conditional_formatting(ws, cell_range, type='sum', competence=module[1:])
+                    col_letters = []
+                    search_for = []
+                    if module == 'ΣN' or module == 'ΣGKü' or module == 'ΣGKv':
+                        col_letters.extend(comp_dict['GK'])
+                        col_letters.extend(comp_dict['GEK'])
+                        if module == 'ΣN':
+                            search_for = ['n', '-']
+                        if module == 'ΣGKü':
+                            search_for = ['ü', 'GKü']
+                        elif module == 'ΣGKv':
+                            search_for = ['v', 'GKv']
+                    elif module == 'ΣEKü' or module == 'ΣEKv':
+                        col_letters.extend(comp_dict['EK'])
+                        col_letters.extend(comp_dict['GEK'])
+                        if module == 'ΣEKü':
+                            search_for = ['ü', 'EKü']
+                        elif module == 'ΣEKv':
+                            search_for = ['v', 'EKv']
+                    formular_parts = []
+                    for letter in col_letters:
+                        for sf in search_for:
+                            formular_parts.append(f'SUMPRODUCT(--EXACT({letter}#,"{sf}"))')
+                    formular = "+".join(formular_parts)
+                    for c_cell in ws[cell.column_letter]:
+                        if c_cell.value == '=':
+                            c_cell.value += formular.replace('#', str(c_cell.row))
+
+                elif module == '∅SMÜ' and self.wh_calculation:
+                    # =(SUM(F2:L2)-SMALL(F2:L2; 1)-SMALL(F2:L2; 2))/5
+                    formular_range = "#,".join(wh_letter_list) + "#"
+                    formular = f"(SUM({formular_range})"
+                    for i in range(self.number_cancel):
+                        formular += f"-SMALL(({formular_range}), {i + 1})"
+                    formular += f")/{len(wh_letter_list) - self.number_cancel}"
+                    for c_cell in ws[cell.column_letter]:
+                        if c_cell.value == '=':
+                            c_cell.value += formular.replace('#', str(c_cell.row))
+                    custom_conditional_formatting(ws, cell_range, type='points',
+                                                  start=f'${cell.column_letter}${max_row + 2}',
+                                                  end=f'${cell.column_letter}${max_row + 3}')
+                    ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
+                    ws[f'A{max_row + 2}'].font = Font(bold=True)
+                    ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
+                    ws[f'A{max_row + 3}'].font = Font(bold=True)
+                    ws[f'{cell.column_letter}{max_row + 2}'].value = 6
+                    ws[f'{cell.column_letter}{max_row + 3}'].value = 10
 
         directory = self.settings.value('dir', "")
         ct = datetime.now()
-        filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_{self.current_course}"
+        filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_Noten"
+        if len(self.pages) == 1:
+            filename += '_' + self.current_course
 
         file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
         if file:
-            self.wb.save(file)
+            wb.save(file)
             self.settings.setValue("dir", file[:file.rfind("/")])
 
     def open_settings(self):
