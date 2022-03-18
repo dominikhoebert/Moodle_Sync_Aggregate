@@ -5,12 +5,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class GradeBook:
-    pages: list  # List of GradePages
-    katalog: dict = field(repr=False)  # Dict of competence Number to Competence Name
-
-    def __init__(self, katalog):
-        self.katalog = katalog
-        self.pages = []
+    pages: list = field(default_factory=list)  # List of GradePages
+    katalog: dict = field(repr=False, default_factory=dict)  # Dict of competence Number to Competence Name
 
     def add_page(self, name: str, grades: DataFrame):
         self.pages.append(GradePage(name, grades, self.katalog))
@@ -73,6 +69,7 @@ if __name__ == "__main__":
     df = DataFrame([['x', 'y', 'z', 'r']], columns=['GK321 balbla', 'EK532 asdfg', 'GEK844 jrfnn', 'asdjfj'])
     with open('modules.json', 'r') as f:
         module_names = json.load(f)
+    # gb = GradeBook()
     gb = GradeBook(module_names)
     gb.add_page("1a", df)
     print(gb.pages)

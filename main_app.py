@@ -15,6 +15,7 @@ from main_window import Ui_MainWindow
 from SettingsDlg import SettingsDlg
 from moodle_sync import MoodleSync
 from conditional_formating import custom_conditional_formatting
+from data_classes import GradeBook, GradePage, Competence, Module
 
 
 # Translate .ui to .py
@@ -60,6 +61,45 @@ def fail_to_load(message, error=None):
     msg_box.exec_()
 
 
+def replace_grades(grades):
+    replaces = {"nicht erfüllt": "n", "Nicht erfüllt": "n", "GK vollständig": "GKv", "GK überwiegend": "GKü",
+                "EK vollständig": "EKv", "EK überwiegend": "EKü", "vollständig erfüllt": "v",
+                "überwiegend erfüllt": "ü"}
+    for k, v in replaces.items():
+        grades = grades.replace(k, v)
+
+    return grades
+
+
+def load_student_list(path):
+    try:
+        return pd.read_csv(path)
+    except FileNotFoundError as e:
+        print(f"No studentlist at {path}", e)
+        return None
+
+
+def merge_student_list_to_grades(grades, student_list):
+    if student_list is not None:
+        grades = grades.merge(student_list, how='left', left_on='Email', right_on='mail')
+        grades = grades.drop(['dn', 'mail', 'sn', 'givenname', 'name', 'accountexpirationdate'], axis=1,
+                             errors='ignore')
+        grades = grades.rename(columns={'department': 'Klasse'})
+    else:
+        grades["Klasse"] = ""
+    return grades
+
+
+def open_competence_names_katalog(path):
+    try:
+        with open(path, 'r') as f:
+            competence_names = json.load(f)
+    except FileNotFoundError:
+        print(f"Competence Names Katalaog at {path} not found.")
+        competence_names = {}
+    return competence_names
+
+
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -83,12 +123,13 @@ class Window(QMainWindow, Ui_MainWindow):
         # Data
         self.current_course = None  # Text
         self.courses = None  # Dict Course name:id
-        self.grades = None  # Dataframe of Student name, Modules and Grades
-        self.pages = {}  # dict of course names to Grades Dataframes
+        # self.grades = None  # Dataframe of Student name, Modules and Grades
+        # self.pages = {}  # dict of course names to Grades Dataframes
         self.checkboxes = None  # List of Checkboxes for Modules
         self.student_list = None  # Dataframe Name Klasse
-        self.competences = None  # Dict competence number as string eg. '21' (for 2.1) to Module Names
-        self.competence_helper = None  # Dict competence_name to competence number
+        # self.competences = None  # Dict competence number as string eg. '21' (for 2.1) to Module Names
+        # self.competence_helper = None  # Dict competence_name to competence number
+        self.grade_book = GradeBook(open_competence_names_katalog('modules.json'))
 
         # Config
         self.settings = QSettings('TGM', 'Moodle_Sync_Grading')
@@ -97,17 +138,17 @@ class Window(QMainWindow, Ui_MainWindow):
         self.move(self.settings.value("pos", QPoint(50, 50)))
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
-        self.use_studentlist = self.settings.value("use_studentlist", False)
+        self.use_student_list = self.settings.value("use_student_list", False)
         self.create_competence_columns = self.settings.value('create_competence_columns', True)
         self.mark_suggestion = self.settings.value('mark_suggestion', False)
         self.negative_competences = True
         self.competence_counter = True
         self.wh_calculation = True
         self.number_cancel = self.settings.value('number_cancel', 2)
-        if self.use_studentlist == 'true' or self.use_studentlist is True:
-            self.use_studentlist = True
+        if self.use_student_list == 'true' or self.use_student_list is True:
+            self.use_student_list = True
         else:
-            self.use_studentlist = False
+            self.use_student_list = False
         if self.create_competence_columns == 'true' or self.create_competence_columns is True:
             self.create_competence_columns = True
         else:
@@ -123,10 +164,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.username = self.settings.value("username", None)
         self.password = self.settings.value("password", None)
         self.ldap_username_extension = self.settings.value("ldap_username_extension", '@tgm.ac.at')
-        self.student_list_path = self.settings.value("studentlist",
+        self.student_list_path = self.settings.value("student_list",
                                                      "~/tgm - Die Schule der Technik/HIT - Abteilung für Informations"
                                                      "technologie - Dokumente/Organisation/Tools/studentlistv2.csv")
-        self.ldap_studentlistpath = "ldap_studentlist.csv"  # TODO to settings?
+        self.ldap_student_list_path = "ldap_studentlist.csv"  # TODO to settings?
         self.moodle = None
 
         self.login()
@@ -162,105 +203,67 @@ class Window(QMainWindow, Ui_MainWindow):
     def course_changed(self, course):
         self.current_course = course.text()
 
+    def merge_group_to_grades(self, grades):
+        user_list = []
+        for uid in grades.userid:
+            user_list.append({"userid": uid, "courseid": self.get_course_id(self.current_course)})
+
+        user_info = self.moodle.get_student_info(userlist=user_list)
+        grades = grades.merge(user_info, how='left', left_on='userid', right_on='id')
+        grades = grades.drop(['userid', 'id', 'fullname'], axis=1)
+        grades = grades.rename(columns={'groups': 'Gruppen', 'email': 'Email'})
+        return grades
+
     def download_grades(self):
-        try:
-            self.student_list = pd.read_csv(self.ldap_studentlistpath)
-        except FileNotFoundError as e:
-            print(f"No ldap studentlist at {self.ldap_studentlistpath}", e)
+        # Load Studentlist: first try from ldap then from external path
+        if self.student_list is None:
+            self.student_list = load_student_list(self.ldap_student_list_path)
+            if self.use_student_list and self.student_list is not None:
+                self.student_list = load_student_list(self.student_list_path)
 
-        if self.use_studentlist and self.student_list is not None:
-            try:
-                self.student_list = pd.read_csv(self.student_list_path)
-            except Exception as e:
-                print(f"Failed to load Student List CSV at {self.student_list_path}. Please check Settings.", e)
-
+        # Check if a course is selected. if not choose first one
         if self.current_course is None:
             self.courselistWidget.setCurrentRow(0)
-        self.grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
 
-        userlist = []
-        for uid in self.grades.userid:
-            userlist.append({"userid": uid, "courseid": self.get_course_id(self.current_course)})
-        user_info = self.moodle.get_student_info(userlist=userlist)
-        self.grades = self.grades.merge(user_info, how='left', left_on='userid', right_on='id')
-        self.grades = self.grades.drop(['userid', 'id', 'fullname'], axis=1)
-        self.grades = self.grades.rename(columns={'groups': 'Gruppen', 'email': 'Email'})
+        grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
+        grades = self.merge_group_to_grades(grades)
+        grades = grades.sort_values(by=['Gruppen', 'Schüler'])
 
-        self.grades = self.grades.sort_values(by=['Gruppen', 'Schüler'])
+        grades = replace_grades(grades)
+        grades = merge_student_list_to_grades(grades, self.student_list)
 
-        self.grades = self.grades.replace("nicht erfüllt", "n")
-        self.grades = self.grades.replace("Nicht erfüllt", "n")
-        self.grades = self.grades.replace("GK vollständig", "GKv")
-        self.grades = self.grades.replace("GK überwiegend", "GKü")
-        self.grades = self.grades.replace("EK vollständig", "EKv")
-        self.grades = self.grades.replace("EK überwiegend", "EKü")
-        self.grades = self.grades.replace("vollständig erfüllt", "v")
-        self.grades = self.grades.replace("überwiegend erfüllt", "ü")
+        grades.columns = filter_blank(grades.columns)
+        grades = grades[["Schüler", "Klasse", "Gruppen", "Email"] + list(grades.columns)[1:-3]]
 
-        if self.student_list is not None:
-            self.grades = self.grades.merge(self.student_list, how='left', left_on='Email', right_on='mail')
-            self.grades = self.grades.drop(['dn', 'mail', 'sn', 'givenname', 'name', 'accountexpirationdate'], axis=1)
-            self.grades = self.grades.rename(columns={'department': 'Klasse'})
-        else:
-            self.grades["Klasse"] = ""
-
-        self.grades.columns = filter_blank(self.grades.columns)
-        self.grades = self.grades[["Schüler", "Klasse", "Gruppen", "Email"] + list(self.grades.columns)[1:-3]]
-
-        if self.create_competence_columns:
-            self.competences = {}
-            for module in list(self.grades.columns):
-                if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email']:
-                    s = module.split(' ')[0].split('K')
-                    if len(s) > 1:
-                        module_type = s[0]
-                        module_number = s[1]
-                        if module_type in ['G', 'GE'] and len(module_number) >= 3:
-                            competence_number = module_number[:2]
-                            if competence_number in self.competences:
-                                self.competences[competence_number].append(module)
-                            else:
-                                self.competences[competence_number] = [module]
-
-            try:
-                with open('modules.json', 'r') as f:
-                    module_names = json.load(f)
-            except FileNotFoundError:
-                module_names = {}
-
-            self.competence_helper = {}
-            for competence_number, modules in self.competences.items():
-                competence_name = f"{competence_number[0]}.{competence_number[1]} Grundkompetenz"
-                if competence_number in module_names:
-                    competence_name = module_names[competence_number]
-                self.grades[competence_name] = '='
-                self.competence_helper[competence_name] = competence_number
+        self.grade_book.add_page(self.current_course, grades)
 
         if self.mark_suggestion:
-            self.grades["Punkte"] = '='
-            self.grades["Notenvorschlag"] = '='
+            grades["Punkte"] = '='
+            grades["Notenvorschlag"] = '='
 
         if self.negative_competences:
-            self.grades["Negative Kompetenzen"] = '='
+            grades["Negative Kompetenzen"] = '='
 
         if self.competence_counter:
-            self.grades['ΣN'] = '='
-            self.grades['ΣGKü'] = '='
-            self.grades['ΣGKv'] = '='
-            self.grades['ΣEKü'] = '='
-            self.grades['ΣEKv'] = '='
+            grades['ΣN'] = '='
+            grades['ΣGKü'] = '='
+            grades['ΣGKv'] = '='
+            grades['ΣEKü'] = '='
+            grades['ΣEKv'] = '='
 
         if self.wh_calculation:
-            self.grades['∅SMÜ'] = '='
+            grades['∅SMÜ'] = '='
 
-        self.create_modules_list()
+        self.create_modules_list(grades)
 
-    def create_modules_list(self):
+    def create_modules_list(self, grades):
         self.checkboxes = []
+        # delete old checkboxes
         for i in reversed(range(self.tasks_verticalLayout.count())):
             self.tasks_verticalLayout.itemAt(i).widget().setParent(None)
 
-        for module in list(self.grades.columns):
+        # create checkboxes
+        for module in list(grades.columns):
             if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email', 'Punkte']:
                 cb = QCheckBox(module, self)
                 cb.setChecked(True)
@@ -312,7 +315,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
             ws.freeze_panes = ws['B1']
 
-            tab = worksheet.table.Table(displayName="Table1", ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
+            tab = worksheet.table.Table(ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
             tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
                                                                 showColumnStripes=False)
             ws.add_table(tab)
@@ -503,16 +506,16 @@ class Window(QMainWindow, Ui_MainWindow):
             self.settings.setValue("dir", file[:file.rfind("/")])
 
     def open_settings(self):
-        settings = SettingsDlg(self.url, self.service, self.username, self.password, self.use_studentlist,
+        settings = SettingsDlg(self.url, self.service, self.username, self.password, self.use_student_list,
                                self.student_list_path, self.mark_suggestion, self.ldap_username_extension,
-                               self.number_cancel, filename=self.ldap_studentlistpath, parent=self)
+                               self.number_cancel, filename=self.ldap_student_list_path, parent=self)
         if settings.exec():
             self.url = settings.ui.url_lineEdit.text()
             self.service = settings.ui.service_lineEdit.text()
             self.username = settings.ui.username_lineEdit.text()
             self.password = settings.ui.password_lineEdit.text()
             self.ldap_username_extension = settings.ui.extension_lineEdit.text()
-            self.use_studentlist = settings.ui.checkBox.isChecked()
+            self.use_student_list = settings.ui.checkBox.isChecked()
             self.student_list_path = settings.ui.studentlist_lineEdit.text()
             self.mark_suggestion = settings.ui.marksuggestion_checkBox.isChecked()
             self.number_cancel = settings.ui.cancle_number_spinBox.value()
@@ -522,8 +525,8 @@ class Window(QMainWindow, Ui_MainWindow):
             self.settings.setValue("username", self.username)
             self.settings.setValue("password", self.password)
             self.settings.setValue("ldap_username_extension", self.ldap_username_extension)
-            self.settings.setValue("use_studentlist", self.use_studentlist)
-            self.settings.setValue("studentlist", self.student_list_path)
+            self.settings.setValue("use_student_list", self.use_student_list)
+            self.settings.setValue("student_list", self.student_list_path)
             self.settings.setValue("mark_suggestion", self.mark_suggestion)
             self.settings.setValue("number_cancel", self.number_cancel)
         self.login()

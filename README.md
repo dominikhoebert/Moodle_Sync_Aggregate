@@ -36,7 +36,10 @@ Token benötigt.
 - Download Progress Bar (multiprocessing?)
 - Download and Merge Grundkompetenzüberprüfungen
 - Create Grundkompetenzüberprüfungen list
+- rework gui
 - andere Berechnungen?
+- statistics? anzahl an noten, kompetenzen, schüler, ...
+- graphes for statistics?
 - ~~Kompetenzzähler~~
 - ~~Berechnung und Streichungen von WH/Wiederholung/SMÜ~~
 - ~~add Cancel Number in settings~~
