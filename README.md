@@ -32,6 +32,7 @@ Token benötigt.
 ## TODOs
 
 - ~~Using LDAP for studentlist~~
+- add configparser
 - Download multiple and export into one file
 - Download Progress Bar (multiprocessing?)
 - Download and Merge Grundkompetenzüberprüfungen
@@ -40,6 +41,7 @@ Token benötigt.
 - andere Berechnungen?
 - statistics? anzahl an noten, kompetenzen, schüler, ...
 - graphes for statistics?
+- export as json
 - ~~Kompetenzzähler~~
 - ~~Berechnung und Streichungen von WH/Wiederholung/SMÜ~~
 - ~~add Cancel Number in settings~~

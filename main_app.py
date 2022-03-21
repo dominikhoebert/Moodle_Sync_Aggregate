@@ -28,6 +28,8 @@ from data_classes import GradeBook, GradePage, Competence, Module
 
 
 def list_to_float(grade_list):
+    """ Function takes a list of values and trys to convert them to floats.
+    Returns a list of values which contains str and floats"""
     return_list = []
     for item in grade_list:
         temp_item = item
@@ -39,9 +41,11 @@ def list_to_float(grade_list):
     return return_list
 
 
-def filter_blank(grade_list):
+def filter_blank(list_to_filter):
+    """Filters empty/blank string values from a list of strings
+    returns the filtered list"""
     return_list = []
-    for i, item in enumerate(grade_list):
+    for i, item in enumerate(list_to_filter):
         if item == '':
             return_list.append(f"Spalte{i}")
         else:
@@ -50,28 +54,32 @@ def filter_blank(grade_list):
 
 
 def get_column_for_module(ws, module):
+    """Returns the column letter of the wanted module in a worksheet"""
     for cell in ws[1]:
         if module == cell.value:
             return cell.column_letter
 
 
-def fail_to_load(message, error=None):
+def show_messagebox(message, error=None):
+    """Prints a Message in a Messagebox"""
     print(message, error)
-    msg_box = QMessageBox(QMessageBox.Information, "Fehler", message)
+    msg_box = QMessageBox(QMessageBox.Information, "Message", message)
     msg_box.exec_()
 
 
 def replace_grades(grades):
+    """replaces long grades with the equivalent shortcut in a grades dataframe
+    returns the replaced dataframe"""
     replaces = {"nicht erfüllt": "n", "Nicht erfüllt": "n", "GK vollständig": "GKv", "GK überwiegend": "GKü",
                 "EK vollständig": "EKv", "EK überwiegend": "EKü", "vollständig erfüllt": "v",
                 "überwiegend erfüllt": "ü"}
     for k, v in replaces.items():
         grades = grades.replace(k, v)
-
     return grades
 
 
 def load_student_list(path):
+    """ trys to open a studentlist.csv from path. Returns the studentlist as dataframe"""
     try:
         return pd.read_csv(path)
     except FileNotFoundError as e:
@@ -80,6 +88,7 @@ def load_student_list(path):
 
 
 def merge_student_list_to_grades(grades, student_list):
+    """merges the classes to a gradeslist"""
     if student_list is not None:
         grades = grades.merge(student_list, how='left', left_on='Email', right_on='mail')
         grades = grades.drop(['dn', 'mail', 'sn', 'givenname', 'name', 'accountexpirationdate'], axis=1,
@@ -91,6 +100,7 @@ def merge_student_list_to_grades(grades, student_list):
 
 
 def open_competence_names_katalog(path):
+    """trys to open a competence.json from path. Returns katalog as dict. returns empty dict when failed"""
     try:
         with open(path, 'r') as f:
             competence_names = json.load(f)
@@ -98,6 +108,17 @@ def open_competence_names_katalog(path):
         print(f"Competence Names Katalaog at {path} not found.")
         competence_names = {}
     return competence_names
+
+
+def get_new_worksheet(workbook, title):
+    """returns new worksheet, with title"""
+    # new workbook already has a worksheet. change title and return it.
+    if workbook.sheetnames[0] == 'Sheet':
+        ws = workbook.active
+        ws.title = title
+        return ws
+    else:
+        return workbook.create_sheet(title)
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -130,6 +151,7 @@ class Window(QMainWindow, Ui_MainWindow):
         # self.competences = None  # Dict competence number as string eg. '21' (for 2.1) to Module Names
         # self.competence_helper = None  # Dict competence_name to competence number
         self.grade_book = GradeBook(open_competence_names_katalog('modules.json'))
+        self.current_page = None
 
         # Config
         self.settings = QSettings('TGM', 'Moodle_Sync_Grading')
@@ -173,27 +195,31 @@ class Window(QMainWindow, Ui_MainWindow):
         self.login()
 
     def login(self):
+        """login to moodle"""
         if self.username and self.password:
             self.moodle = MoodleSync(self.url, self.username, self.password, self.service)
             self.download_courses()
         else:
-            fail_to_load("Moodle Login not defined. Please check Settings.")
+            show_messagebox("Moodle Login not defined. Please check Settings.")
 
     def get_course_id(self, name):
+        """returns the moodle id to a course"""
         return self.courses[name]['id']
 
     def download_courses(self):
+        """downloads recent courses"""
         if self.moodle:
             try:
                 self.courses = self.moodle.get_recent_courses()
                 self.set_courses()
                 self.download_pushButton.setEnabled(self.all_none_checkBox.checkState())
             except Exception as e:
-                fail_to_load("Failed to load courses. Please check Settings.", e)
+                show_messagebox("Failed to load courses. Please check Settings.", e)
         else:
-            fail_to_load("Moodle URL/Key not defined. Please check Settings.")
+            show_messagebox("Moodle URL/Key not defined. Please check Settings.")
 
     def set_courses(self):
+        """ displays in the ui courses """
         self.courselistWidget.blockSignals(True)
         self.courselistWidget.clear()
         for c in self.courses.keys():
@@ -204,6 +230,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.current_course = course.text()
 
     def merge_group_to_grades(self, grades):
+        """ loads and merges the user info (for the groups) for all students in a course """
         user_list = []
         for uid in grades.userid:
             user_list.append({"userid": uid, "courseid": self.get_course_id(self.current_course)})
@@ -215,6 +242,8 @@ class Window(QMainWindow, Ui_MainWindow):
         return grades
 
     def download_grades(self):
+        """When Download Button pressed.
+        loads studentlist, loads grades from selected course, preparing grades, creating checkboxes."""
         # Load Studentlist: first try from ldap then from external path
         if self.student_list is None:
             self.student_list = load_student_list(self.ldap_student_list_path)
@@ -254,9 +283,12 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.wh_calculation:
             grades['∅SMÜ'] = '='
 
+        self.current_page = grades
+
         self.create_modules_list(grades)
 
     def create_modules_list(self, grades):
+        """ creates checkboxes for every module """
         self.checkboxes = []
         # delete old checkboxes
         for i in reversed(range(self.tasks_verticalLayout.count())):
@@ -271,19 +303,21 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.checkboxes.append(cb)
 
         self.save_pushButton.setEnabled(True)
-        if len(self.pages) > 0:
+        if len(self.grade_book.pages) > 0:
             self.merge_pushButton.setEnabled(True)
         self.export_pushButton.setEnabled(True)
 
     def remove_columns(self, dataframe):
+        """ removes unchecked columns from modules/columns from grades dataframe"""
         columns_to_drop = [cb.text() for cb in self.checkboxes if cb.checkState() == 0]
         return dataframe.drop(columns_to_drop, axis=1)
 
     def save_grades(self):
-        self.pages[self.current_course] = self.remove_columns(self.grades)
+        """store grades dataframe in gradebook"""
+        self.grade_book.add_page(self.current_course, self.remove_columns(self.current_page))
 
     def merge(self):
-        self.remove_columns(self.grades)
+        grades = self.remove_columns(self.current_page)
         # TODO code functionality
         # open merge dialog
         # create saved pages checkboxes to merge to
@@ -296,11 +330,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         wb = Workbook()
         for page_name, grades_dataframe in self.pages.items():
-            if wb.sheetnames[0] == 'Sheet':
-                ws = wb.active
-                ws.title = page_name
-            else:
-                ws = wb.create_sheet(page_name)
+            ws = get_new_worksheet(wb, page_name)
 
             for row in dataframe_to_rows(grades_dataframe, index=False, header=True):
                 ws.append(list_to_float(row))
