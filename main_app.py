@@ -121,6 +121,34 @@ def get_new_worksheet(workbook, title):
         return workbook.create_sheet(title)
 
 
+def grades_page_to_excel_worksheet(grade_page, wb):
+    """ converts dataframe to excel worksheet """
+    ws = get_new_worksheet(wb, grade_page.name)
+    for row in dataframe_to_rows(grade_page.grades, index=False, header=True):
+        ws.append(list_to_float(row))
+    return ws
+
+
+def set_column_width(ws):
+    col_dims = {'A': 35, 'B': 6, 'C': 8, 'D': 10}
+    for col, dim in col_dims.items():
+        ws.column_dimensions[col].width = dim
+    for i in range(len(col_dims) + 1, ws.max_column + 1):
+        ws.column_dimensions[get_column_letter(i)].width = 4
+    return ws
+
+
+def create_points_config(cell, max_row, ws):
+    """ Creates a section at the button end of the table set the needed and max points for the conditional formating"""
+    ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
+    ws[f'A{max_row + 2}'].font = Font(bold=True)
+    ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
+    ws[f'A{max_row + 3}'].font = Font(bold=True)
+    ws[f'{cell.column_letter}{max_row + 2}'].value = 6
+    ws[f'{cell.column_letter}{max_row + 3}'].value = 10
+    return ws
+
+
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -324,48 +352,41 @@ class Window(QMainWindow, Ui_MainWindow):
         # merge
 
     def export_grades(self):
-
-        if len(self.pages) == 0:
+        """ creates a worksheet for every gradepage. works through the title name for formating and forumlar creation """
+        if len(self.grade_book.pages) == 0:
             self.save_grades()
 
         wb = Workbook()
-        for page_name, grades_dataframe in self.pages.items():
-            ws = get_new_worksheet(wb, page_name)
+        for page in self.grade_book.pages:
 
-            for row in dataframe_to_rows(grades_dataframe, index=False, header=True):
-                ws.append(list_to_float(row))
-
-            ws.column_dimensions['A'].width = 35
-            ws.column_dimensions['B'].width = 6
-            ws.column_dimensions['C'].width = 8
-            ws.column_dimensions['D'].width = 10
-
-            for i in range(5, ws.max_column + 1):
-                ws.column_dimensions[get_column_letter(i)].width = 4
-
+            ws = grades_page_to_excel_worksheet(page, wb)
+            ws = set_column_width(ws)
             ws.freeze_panes = ws['B1']
 
+            # create table
             tab = worksheet.table.Table(ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
             tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
                                                                 showColumnStripes=False)
             ws.add_table(tab)
 
+            # iterate first row of grades table
             max_row = ws.max_row
-            comp_dict = {'GK': [], 'GEK': [], 'EK': []}
+            # comp_dict = {'GK': [], 'GEK': [], 'EK': []}
             comp_list = []
             wh_letter_list = []
             for cell in ws[1]:
                 module = str(cell.value)
                 cell_range = f"{cell.column_letter}2:{cell.column_letter}{max_row}"
+
                 if module.startswith("GK"):
                     custom_conditional_formatting(ws, cell_range, 'GK')
-                    comp_dict['GK'].append(cell.column_letter)
+                    page.get_module_by_name(module).column_letter = cell.column_letter
                 elif module.startswith("EK"):
                     custom_conditional_formatting(ws, cell_range, 'EK')
-                    comp_dict['EK'].append(cell.column_letter)
+                    page.get_module_by_name(module).column_letter = cell.column_letter
                 elif module.startswith("GEK"):
                     custom_conditional_formatting(ws, cell_range, 'GEK')
-                    comp_dict['GEK'].append(cell.column_letter)
+                    page.get_module_by_name(module).column_letter = cell.column_letter
 
                 elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
                     wh_letter_list.append(cell.column_letter)
@@ -375,54 +396,52 @@ class Window(QMainWindow, Ui_MainWindow):
                     custom_conditional_formatting(ws, cell_range, type='points',
                                                   start=f'${cell.column_letter}${max_row + 2}',
                                                   end=f'${cell.column_letter}${max_row + 3}')
-                    ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
-                    ws[f'A{max_row + 2}'].font = Font(bold=True)
-                    ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
-                    ws[f'A{max_row + 3}'].font = Font(bold=True)
-                    ws[f'{cell.column_letter}{max_row + 2}'].value = 6
-                    ws[f'{cell.column_letter}{max_row + 3}'].value = 10
+                    ws = create_points_config(cell, max_row, ws)
 
                 elif len(module) > 1 and module[1] == '.':  # if Kompetenz
                     custom_conditional_formatting(ws, cell_range, 'K')
                     comp_list.append(cell.column_letter)
+
+                    formular = ' & ";" & '.join([f"{m.column_letter}#" for m in page.get_modules_by_type('G')])
+
                     for c_cell in ws[cell.column_letter]:
                         if c_cell.value == '=':
-                            c_cell.value = '=' + ' & ";" & '.join(
-                                [f"{get_column_for_module(ws, c)}{c_cell.row}" for c in
-                                 self.competences[self.competence_helper[module]]])
+                            c_cell.value += formular.replace('#', str(c_cell.row))
 
                 elif module == 'Punkte' and self.mark_suggestion:
+                    formular = []
+                    for m in page.modules:
+                        affected_cell = f"SUMPRODUCT(--EXACT({m.column_letter}#"
+                        formular = f'{affected_cell},"GKü"))*-1+{affected_cell},"EKü"))+{affected_cell},"EKv"))*2+'
+                        if m.type == 'GK':
+                            formular += f'{affected_cell},"ü"))*-1+'
+                        elif m.type == 'GEK':
+                            formular += f'{affected_cell},"ü"))*-1+'
+                        elif m.type == 'EK':
+                            formular += f'{affected_cell},"ü"))+'
+                            formular += f'{affected_cell},"v"))*2+'
+
                     for c_cell in ws[cell.column_letter]:
                         if c_cell.value == '=':
-                            for module_type, module_letter_list in comp_dict.items():
-                                for module_letter in module_letter_list:
-                                    affected_cell = f"SUMPRODUCT(--EXACT({module_letter}{c_cell.row}"
-                                    c_cell.value += f'{affected_cell},"GKü"))*-1+'
-                                    c_cell.value += f'{affected_cell},"EKü"))+'
-                                    c_cell.value += f'{affected_cell},"EKv"))*2+'
-                                    if module_type == 'GK':
-                                        c_cell.value += f'{affected_cell},"ü"))*-1+'
-                                    elif module_type == 'GEK':
-                                        c_cell.value += f'{affected_cell},"ü"))*-1+'
-                                    elif module_type == 'EK':
-                                        c_cell.value += f'{affected_cell},"ü"))+'
-                                        c_cell.value += f'{affected_cell},"v"))*2+'
-                            c_cell.value = c_cell.value[:-1]
+                            c_cell.value += formular.replace('#', str(c_cell.row))[:-1]
                     custom_conditional_formatting(ws, cell_range, type='scale')
 
                 elif module == 'Notenvorschlag' and self.mark_suggestion:
                     sc = ws.max_column + 3  # start column
 
+                    # create marks table
                     marks_table = [['Note', 'Schlüssel', 'Anz.', 'P', '', 'Komp.', 'Anz.'],
-                                   [5, '', '', '', '', 'GK', len(comp_dict['GK'])],
+                                   [5, '', '', '', '', 'GK', len(page.get_modules_by_type('GK'))],
                                    [4, 'alle GK mind. ü', f'={get_column_letter(sc + 6)}2+{get_column_letter(sc + 6)}3',
-                                    f'={get_column_letter(sc + 2)}3*-1', '*', 'GEK', len(comp_dict['GEK'])],
+                                    f'={get_column_letter(sc + 2)}3*-1', '*', 'GEK',
+                                    len(page.get_modules_by_type('GEK'))],
                                    [3, 'mind. GKv', 6, f'={get_column_letter(sc + 2)}4-{get_column_letter(sc + 2)}3',
                                     '',
-                                    'EK', len(comp_dict['EK'])],
+                                    'EK', len(page.get_modules_by_type('EK'))],
                                    [2, 'mind. EKü', 6, f'={get_column_letter(sc + 2)}5', '', '', ''],
                                    [1, 'mind. EKv', 6, f'={get_column_letter(sc + 2)}6*2', '', '', '']]
 
+                    # print marks table into worksheet
                     for row_number, rows in enumerate(marks_table):
                         for column_number, cell_value in enumerate(rows):
                             ws[f'{get_column_letter(sc + column_number)}{row_number + 1}'].value = cell_value
@@ -449,14 +468,14 @@ class Window(QMainWindow, Ui_MainWindow):
                     mcl = f'${get_column_letter(sc)}$'  # mark_column_letter
                     kpcl = f'${get_column_letter(sc + 3)}$'  # key_points_column_letter
 
-                    competences_letters_list = [*comp_dict['GK'], *comp_dict['GEK']]
                     formular_string = '=_xlfn.IFS(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},'
 
                     for c_cell in ws[cell.column_letter]:
                         if c_cell.value == '=':
                             c_cell.font = Font(bold=True)
                             pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
-                            cf = ' & '.join([f'{letter}{c_cell.row}' for letter in competences_letters_list])
+                            cf = ' & '.join(
+                                [f'{module.column_letter}{c_cell.row}' for module in page.get_modules_by_type('G')])
                             c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,' \
                                                                   f'{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
                     custom_conditional_formatting(ws, cell_range, type='marks')
@@ -465,14 +484,17 @@ class Window(QMainWindow, Ui_MainWindow):
                     custom_conditional_formatting(ws, cell_range, type='group')
 
                 elif module == 'Negative Kompetenzen' and self.negative_competences:
+
+                    formular_parts = []
+                    for comp_letter in comp_list:
+                        comp_number = ws[f'{comp_letter}1'].value[:3]
+                        formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
+                                              f'{comp_letter}#)))>0,"{comp_number};","")')
+                    formular = " & ".join(formular_parts)
+
                     for c_cell in ws[cell.column_letter]:
                         if c_cell.value == '=':
-                            formular_parts = []
-                            for comp_letter in comp_list:
-                                comp_number = ws[f'{comp_letter}1'].value[:3]
-                                formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
-                                                      f'{comp_letter}{c_cell.row})))>0,"{comp_number};","")')
-                            c_cell.value += " & ".join(formular_parts)
+                            c_cell.value += formular.replace('#', str(c_cell.row))
                     ws.column_dimensions[cell.column_letter].width = 14
 
                 elif module in ['ΣN', 'ΣGKü', 'ΣGKv', 'ΣEKü', 'ΣEKv'] and self.competence_counter:
@@ -480,8 +502,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     col_letters = []
                     search_for = []
                     if module == 'ΣN' or module == 'ΣGKü' or module == 'ΣGKv':
-                        col_letters.extend(comp_dict['GK'])
-                        col_letters.extend(comp_dict['GEK'])
+                        col_letters.extend([m.column_letter for m in page.get_modules_by_type('G')])
                         if module == 'ΣN':
                             search_for = ['n', '-']
                         if module == 'ΣGKü':
@@ -489,8 +510,7 @@ class Window(QMainWindow, Ui_MainWindow):
                         elif module == 'ΣGKv':
                             search_for = ['v', 'GKv']
                     elif module == 'ΣEKü' or module == 'ΣEKv':
-                        col_letters.extend(comp_dict['EK'])
-                        col_letters.extend(comp_dict['GEK'])
+                        col_letters.extend([m.column_letter for m in page.get_modules_by_type('E')])
                         if module == 'ΣEKü':
                             search_for = ['ü', 'EKü']
                         elif module == 'ΣEKv':
@@ -517,13 +537,9 @@ class Window(QMainWindow, Ui_MainWindow):
                     custom_conditional_formatting(ws, cell_range, type='points',
                                                   start=f'${cell.column_letter}${max_row + 2}',
                                                   end=f'${cell.column_letter}${max_row + 3}')
-                    ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
-                    ws[f'A{max_row + 2}'].font = Font(bold=True)
-                    ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
-                    ws[f'A{max_row + 3}'].font = Font(bold=True)
-                    ws[f'{cell.column_letter}{max_row + 2}'].value = 6
-                    ws[f'{cell.column_letter}{max_row + 3}'].value = 10
+                    ws = create_points_config(cell, max_row, ws)
 
+        # prepare for save to file
         directory = self.settings.value('dir', "")
         ct = datetime.now()
         filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_Noten"

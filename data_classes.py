@@ -20,6 +20,7 @@ class Module:
     number_str: str
     type: str
     competence: Competence = None
+    column_letter: str = None
 
 
 @dataclass
@@ -29,14 +30,14 @@ class GradePage:
     modules: list[Module] = field(repr=False)  # list of Modules
     competences: list[Competence] = field(repr=False)  # list of Competences
 
-    def __init__(self, name: str, grades: DataFrame, katalog):
+    def __init__(self, name: str, grades: DataFrame, katalog: dict):
         self.name = name
         self.grades = grades
         self.modules = []
         self.competences = []
         self.read_in(katalog)
 
-    def read_in(self, katalog):
+    def read_in(self, katalog: dict):
         for column_name in list(self.grades.columns):
             if column_name not in ["Schüler", 'Klasse', 'Gruppen', 'Email']:
                 split = column_name.split(' ')[0].split('K')
@@ -57,20 +58,39 @@ class GradePage:
                         self.modules.append(module)
                         self.competences.append(competence)
 
+    def get_module_by_name(self, name: str):
+        for module in self.modules:
+            if name == module.name:
+                return module
+        return None
+
+    def get_modules_by_type(self, type_filter: str):
+        if type_filter == 'E':
+            filters = ['EK', 'GEK']
+        elif type_filter == 'G':
+            filters = ['GK', 'GEK']
+        else:
+            filters = [type_filter]
+        modules = []
+        for module in self.modules:
+            if module.type in filters:
+                modules.append(module)
+        return modules
+
 
 @dataclass
 class GradeBook:
     pages: list[GradePage] = field(default_factory=list)  # List of GradePages
     katalog: dict = field(repr=False, default_factory=dict)  # Dict of competence Number to Competence Name
 
-    def __init__(self, katalog):
+    def __init__(self, katalog: dict):
         self.katalog = katalog
         self.pages = []
 
     def add_page(self, name: str, grades: DataFrame):
         self.pages.append(GradePage(name, grades, self.katalog))
 
-    def get_page_from_name(self, name):
+    def get_page_from_name(self, name: str):
         for page in self.pages:
             if page.name == name:
                 return page
