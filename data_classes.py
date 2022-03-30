@@ -39,7 +39,7 @@ class GradePage:
 
     def read_in(self, katalog: dict):
         for column_name in list(self.grades.columns):
-            if column_name not in ["Schüler", 'Klasse', 'Gruppen', 'Email']:
+            if column_name not in ["Schüler", 'Klasse', 'Gruppen', 'Email', 'Kurs']:
                 split = column_name.split(' ')[0].split('K')
                 if len(split) > 1:
                     module_type = split[0]
@@ -64,16 +64,10 @@ class GradePage:
                 return module
         return None
 
-    def get_modules_by_type(self, type_filter: str):
-        if type_filter == 'E':
-            filters = ['EK', 'GEK']
-        elif type_filter == 'G':
-            filters = ['GK', 'GEK']
-        else:
-            filters = [type_filter]
+    def get_modules_by_type(self, filter):
         modules = []
         for module in self.modules:
-            if module.type in filters:
+            if module.type in filter:
                 modules.append(module)
         return modules
 

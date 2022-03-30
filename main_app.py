@@ -91,7 +91,7 @@ def merge_student_list_to_grades(grades, student_list):
     """merges the classes to a gradeslist"""
     if student_list is not None:
         grades = grades.merge(student_list, how='left', left_on='Email', right_on='mail')
-        grades = grades.drop(['dn', 'mail', 'sn', 'givenname', 'name', 'accountexpirationdate'], axis=1,
+        grades = grades.drop(['dn', 'mail', 'sn', 'givenName', 'name', 'accountexpirationdate', 'Email2'], axis=1,
                              errors='ignore')
         grades = grades.rename(columns={'department': 'Klasse'})
     else:
@@ -265,7 +265,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         user_info = self.moodle.get_student_info(userlist=user_list)
         grades = grades.merge(user_info, how='left', left_on='userid', right_on='id')
-        grades = grades.drop(['userid', 'id', 'fullname'], axis=1)
+        grades = grades.drop(['userid', 'id', 'fullname', 'Email2'], axis=1, errors='ignore')
         grades = grades.rename(columns={'groups': 'Gruppen', 'email': 'Email'})
         return grades
 
@@ -352,7 +352,8 @@ class Window(QMainWindow, Ui_MainWindow):
         # merge
 
     def export_grades(self):
-        """ creates a worksheet for every gradepage. works through the title name for formating and forumlar creation """
+        """ creates a worksheet for every gradepage.
+        works through the title name for formating and forumlar creation """
         if len(self.grade_book.pages) == 0:
             self.save_grades()
 
@@ -364,7 +365,7 @@ class Window(QMainWindow, Ui_MainWindow):
             ws.freeze_panes = ws['B1']
 
             # create table
-            tab = worksheet.table.Table(ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
+            tab = worksheet.table.Table(displayName='Table1', ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
             tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
                                                                 showColumnStripes=False)
             ws.add_table(tab)
@@ -409,10 +410,10 @@ class Window(QMainWindow, Ui_MainWindow):
                             c_cell.value += formular.replace('#', str(c_cell.row))
 
                 elif module == 'Punkte' and self.mark_suggestion:
-                    formular = []
+                    formular = ''
                     for m in page.modules:
                         affected_cell = f"SUMPRODUCT(--EXACT({m.column_letter}#"
-                        formular = f'{affected_cell},"GKü"))*-1+{affected_cell},"EKü"))+{affected_cell},"EKv"))*2+'
+                        formular += f'{affected_cell},"GKü"))*-1+{affected_cell},"EKü"))+{affected_cell},"EKv"))*2+'
                         if m.type == 'GK':
                             formular += f'{affected_cell},"ü"))*-1+'
                         elif m.type == 'GEK':
@@ -431,15 +432,16 @@ class Window(QMainWindow, Ui_MainWindow):
 
                     # create marks table
                     marks_table = [['Note', 'Schlüssel', 'Anz.', 'P', '', 'Komp.', 'Anz.'],
-                                   [5, '', '', '', '', 'GK', len(page.get_modules_by_type('GK'))],
+                                   [5, '', '', '', '', 'GK', len(page.get_modules_by_type(['G']))],
                                    [4, 'alle GK mind. ü', f'={get_column_letter(sc + 6)}2+{get_column_letter(sc + 6)}3',
                                     f'={get_column_letter(sc + 2)}3*-1', '*', 'GEK',
-                                    len(page.get_modules_by_type('GEK'))],
+                                    len(page.get_modules_by_type(['GE']))],
                                    [3, 'mind. GKv', 6, f'={get_column_letter(sc + 2)}4-{get_column_letter(sc + 2)}3',
                                     '',
-                                    'EK', len(page.get_modules_by_type('EK'))],
+                                    'EK', len(page.get_modules_by_type(['E']))],
                                    [2, 'mind. EKü', 6, f'={get_column_letter(sc + 2)}5', '', '', ''],
                                    [1, 'mind. EKv', 6, f'={get_column_letter(sc + 2)}6*2', '', '', '']]
+
 
                     # print marks table into worksheet
                     for row_number, rows in enumerate(marks_table):
@@ -476,7 +478,7 @@ class Window(QMainWindow, Ui_MainWindow):
                             pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
                             cf = ' & '.join(
                                 [f'{module.column_letter}{c_cell.row}' for module in page.get_modules_by_type('G')])
-                            c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,' \
+                            c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,'\
                                                                   f'{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
                     custom_conditional_formatting(ws, cell_range, type='marks')
 
@@ -486,6 +488,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 elif module == 'Negative Kompetenzen' and self.negative_competences:
 
                     formular_parts = []
+                    print(comp_list)
                     for comp_letter in comp_list:
                         comp_number = ws[f'{comp_letter}1'].value[:3]
                         formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
@@ -495,6 +498,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     for c_cell in ws[cell.column_letter]:
                         if c_cell.value == '=':
                             c_cell.value += formular.replace('#', str(c_cell.row))
+                            print(c_cell.value, formular)
                     ws.column_dimensions[cell.column_letter].width = 14
 
                 elif module in ['ΣN', 'ΣGKü', 'ΣGKv', 'ΣEKü', 'ΣEKv'] and self.competence_counter:
@@ -543,7 +547,7 @@ class Window(QMainWindow, Ui_MainWindow):
         directory = self.settings.value('dir', "")
         ct = datetime.now()
         filename = f"{directory}/{ct.year}{str(ct.month).zfill(2)}{str(ct.day).zfill(2)}_Noten"
-        if len(self.pages) == 1:
+        if len(self.grade_book.pages) == 1:
             filename += '_' + self.current_course
 
         file, _ = QFileDialog.getSaveFileName(self, "Export Grades", filename, "Excel files (*.xlsx)")
