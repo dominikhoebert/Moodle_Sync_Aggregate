@@ -48,20 +48,27 @@ class GradePage:
                     if len(module_number) >= 3:
                         competence_number = module_number[:2]
                         if competence_number in katalog:
-                            competence = Competence(katalog[competence_number], competence_number)
+                            competence_name = katalog[competence_number]
                         else:
-                            competence = Competence(
-                                competence_number[0] + '.' + competence_number[1] + " Kompetenzbereich",
-                                competence_number)
+                            competence_name = competence_number[0] + '.' + competence_number[1] + " Kompetenzbereich"
+                        competence = self.get_competence_by_name(competence_name)
+                        if competence is None:
+                            competence = Competence(competence_name, competence_number)
+                            self.competences.append(competence)
                         competence.modules.append(module)
                         module.competence = competence
                         self.modules.append(module)
-                        self.competences.append(competence)
 
     def get_module_by_name(self, name: str):
         for module in self.modules:
             if name == module.name:
                 return module
+        return None
+
+    def get_competence_by_name(self, name: str):
+        for competence in self.competences:
+            if name == competence.name:
+                return competence
         return None
 
     def get_modules_by_type(self, filter):
@@ -82,7 +89,9 @@ class GradeBook:
         self.pages = []
 
     def add_page(self, name: str, grades: DataFrame):
-        self.pages.append(GradePage(name, grades, self.katalog))
+        page = GradePage(name, grades, self.katalog)
+        self.pages.append(page)
+        return page
 
     def get_page_from_name(self, name: str):
         for page in self.pages:

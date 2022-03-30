@@ -292,11 +292,15 @@ class Window(QMainWindow, Ui_MainWindow):
         grades.columns = filter_blank(grades.columns)
         grades = grades[["Schüler", "Klasse", "Gruppen", "Email"] + list(grades.columns)[1:-3]]
 
-        self.grade_book.add_page(self.current_course, grades)
+        self.current_page = self.grade_book.add_page(self.current_course, grades)
 
         if self.mark_suggestion:
             grades["Punkte"] = '='
             grades["Notenvorschlag"] = '='
+
+        if self.create_competence_columns:
+            for competence in self.current_page.competences:
+                grades[competence.name] = '='
 
         if self.negative_competences:
             grades["Negative Kompetenzen"] = '='
@@ -310,8 +314,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         if self.wh_calculation:
             grades['∅SMÜ'] = '='
-
-        self.current_page = grades
 
         self.create_modules_list(grades)
 
@@ -403,7 +405,12 @@ class Window(QMainWindow, Ui_MainWindow):
                     custom_conditional_formatting(ws, cell_range, 'K')
                     comp_list.append(cell.column_letter)
 
-                    formular = ' & ";" & '.join([f"{m.column_letter}#" for m in page.get_modules_by_type('G')])
+                    modules = []
+                    for m in page.get_competence_by_name(module).modules:
+                        if m.type in ['G', 'GE']:
+                            modules.append(m)
+
+                    formular = ' & ";" & '.join([f"{m.column_letter}#" for m in modules])
 
                     for c_cell in ws[cell.column_letter]:
                         if c_cell.value == '=':
@@ -442,7 +449,6 @@ class Window(QMainWindow, Ui_MainWindow):
                                    [2, 'mind. EKü', 6, f'={get_column_letter(sc + 2)}5', '', '', ''],
                                    [1, 'mind. EKv', 6, f'={get_column_letter(sc + 2)}6*2', '', '', '']]
 
-
                     # print marks table into worksheet
                     for row_number, rows in enumerate(marks_table):
                         for column_number, cell_value in enumerate(rows):
@@ -478,7 +484,7 @@ class Window(QMainWindow, Ui_MainWindow):
                             pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
                             cf = ' & '.join(
                                 [f'{module.column_letter}{c_cell.row}' for module in page.get_modules_by_type('G')])
-                            c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,'\
+                            c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,' \
                                                                   f'{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
                     custom_conditional_formatting(ws, cell_range, type='marks')
 
@@ -488,7 +494,6 @@ class Window(QMainWindow, Ui_MainWindow):
                 elif module == 'Negative Kompetenzen' and self.negative_competences:
 
                     formular_parts = []
-                    print(comp_list)
                     for comp_letter in comp_list:
                         comp_number = ws[f'{comp_letter}1'].value[:3]
                         formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
@@ -498,7 +503,6 @@ class Window(QMainWindow, Ui_MainWindow):
                     for c_cell in ws[cell.column_letter]:
                         if c_cell.value == '=':
                             c_cell.value += formular.replace('#', str(c_cell.row))
-                            print(c_cell.value, formular)
                     ws.column_dimensions[cell.column_letter].width = 14
 
                 elif module in ['ΣN', 'ΣGKü', 'ΣGKv', 'ΣEKü', 'ΣEKv'] and self.competence_counter:
