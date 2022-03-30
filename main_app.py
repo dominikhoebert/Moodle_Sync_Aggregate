@@ -510,7 +510,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     col_letters = []
                     search_for = []
                     if module == 'ΣN' or module == 'ΣGKü' or module == 'ΣGKv':
-                        col_letters.extend([m.column_letter for m in page.get_modules_by_type('G')])
+                        col_letters.extend([m.column_letter for m in page.get_modules_by_type(['G', 'GE'])])
                         if module == 'ΣN':
                             search_for = ['n', '-']
                         if module == 'ΣGKü':
@@ -518,7 +518,7 @@ class Window(QMainWindow, Ui_MainWindow):
                         elif module == 'ΣGKv':
                             search_for = ['v', 'GKv']
                     elif module == 'ΣEKü' or module == 'ΣEKv':
-                        col_letters.extend([m.column_letter for m in page.get_modules_by_type('E')])
+                        col_letters.extend([m.column_letter for m in page.get_modules_by_type(['E', 'GE'])])
                         if module == 'ΣEKü':
                             search_for = ['ü', 'EKü']
                         elif module == 'ΣEKv':
