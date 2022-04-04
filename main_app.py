@@ -178,8 +178,9 @@ class Window(QMainWindow, Ui_MainWindow):
         self.student_list = None  # Dataframe Name Klasse
         # self.competences = None  # Dict competence number as string eg. '21' (for 2.1) to Module Names
         # self.competence_helper = None  # Dict competence_name to competence number
-        self.grade_book = GradeBook(open_competence_names_katalog('modules.json'))
-        self.current_page = None
+        self.competence_catalog = open_competence_names_katalog('modules.json')
+        self.grade_book = GradeBook(self.competence_catalog)
+        self.current_grades_df = None
 
         # Config
         self.settings = QSettings('TGM', 'Moodle_Sync_Grading')
@@ -292,14 +293,14 @@ class Window(QMainWindow, Ui_MainWindow):
         grades.columns = filter_blank(grades.columns)
         grades = grades[["Schüler", "Klasse", "Gruppen", "Email"] + list(grades.columns)[1:-3]]
 
-        self.current_page = self.grade_book.add_page(self.current_course, grades)
+        current_page = GradePage(self.current_course, grades, self.competence_catalog)
 
         if self.mark_suggestion:
             grades["Punkte"] = '='
             grades["Notenvorschlag"] = '='
 
         if self.create_competence_columns:
-            for competence in self.current_page.competences:
+            for competence in current_page.competences:
                 grades[competence.name] = '='
 
         if self.negative_competences:
@@ -314,6 +315,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
         if self.wh_calculation:
             grades['∅SMÜ'] = '='
+
+        self.current_grades_df = grades
 
         self.create_modules_list(grades)
 
@@ -344,10 +347,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def save_grades(self):
         """store grades dataframe in gradebook"""
-        self.grade_book.add_page(self.current_course, self.remove_columns(self.current_page))
+        self.grade_book.add_page(self.current_course, self.remove_columns(self.current_grades_df))
 
     def merge(self):
-        grades = self.remove_columns(self.current_page)
+        grades = self.remove_columns(self.current_grades_df)
         # TODO code functionality
         # open merge dialog
         # create saved pages checkboxes to merge to
@@ -402,7 +405,6 @@ class Window(QMainWindow, Ui_MainWindow):
                     ws = create_points_config(cell, max_row, ws)
 
                 elif len(module) > 1 and module[1] == '.':  # if Kompetenz
-                    custom_conditional_formatting(ws, cell_range, 'K')
                     comp_list.append(cell.column_letter)
 
                     modules = []
@@ -415,6 +417,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     for c_cell in ws[cell.column_letter]:
                         if c_cell.value == '=':
                             c_cell.value += formular.replace('#', str(c_cell.row))
+                    custom_conditional_formatting(ws, cell_range, 'K')
 
                 elif module == 'Punkte' and self.mark_suggestion:
                     formular = ''
@@ -483,7 +486,8 @@ class Window(QMainWindow, Ui_MainWindow):
                             c_cell.font = Font(bold=True)
                             pcc = f'{get_column_letter(c_cell.column - 1)}{c_cell.row}'  # points_cell_coordinate
                             cf = ' & '.join(
-                                [f'{module.column_letter}{c_cell.row}' for module in page.get_modules_by_type('G')])
+                                [f'{module.column_letter}{c_cell.row}' for module in page.get_modules_by_type(['G',
+                                                                                                               'GE'])])
                             c_cell.value = formular_string + cf + f')))>0,{mcl}2,{pcc}>={kpcl}6,{mcl}6,{pcc}>={kpcl}5,' \
                                                                   f'{mcl}5,{pcc}>={kpcl}4,{mcl}4,{pcc}>={kpcl}3,{mcl}3)'
                     custom_conditional_formatting(ws, cell_range, type='marks')

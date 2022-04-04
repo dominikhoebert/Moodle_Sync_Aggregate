@@ -32,12 +32,14 @@ Token benötigt.
 ## TODOs
 
 - ~~Using LDAP for studentlist~~
+- BUG: some conditional formatting not working
 - add configparser
 - Download multiple and export into one file
 - Download Progress Bar (multiprocessing?)
 - Download and Merge Grundkompetenzüberprüfungen
 - Create Grundkompetenzüberprüfungen list
 - rework gui
+- sort columns by module number/competence number (SYT2 1abHIT)
 - andere Berechnungen?
 - statistics? anzahl an noten, kompetenzen, schüler, ...
 - graphes for statistics?

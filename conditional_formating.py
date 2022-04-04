@@ -66,6 +66,7 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10, competence='
                                                   formula=text_formula('-', range)))
 
 
+
 if __name__ == '__main__':
     wb = Workbook()
     ws = wb.active
