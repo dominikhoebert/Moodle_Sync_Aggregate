@@ -347,7 +347,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def save_grades(self):
         """store grades dataframe in gradebook"""
-        self.grade_book.add_page(self.current_course, self.remove_columns(self.current_grades_df))
+        if self.grade_book.get_page_from_name(self.current_course) is None:
+            self.grade_book.add_page(self.current_course, self.remove_columns(self.current_grades_df))
+        else:
+            show_messagebox(f"{self.current_course} is already saved.")
 
     def merge(self):
         grades = self.remove_columns(self.current_grades_df)
@@ -363,14 +366,15 @@ class Window(QMainWindow, Ui_MainWindow):
             self.save_grades()
 
         wb = Workbook()
-        for page in self.grade_book.pages:
+        for page_number, page in enumerate(self.grade_book.pages):
 
             ws = grades_page_to_excel_worksheet(page, wb)
             ws = set_column_width(ws)
             ws.freeze_panes = ws['B1']
 
             # create table
-            tab = worksheet.table.Table(displayName='Table1', ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
+            tab = worksheet.table.Table(displayName=f'Table{page_number}',
+                                        ref=f"A1:{get_column_letter(ws.max_column)}{ws.max_row}")
             tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium1", showRowStripes=True,
                                                                 showColumnStripes=False)
             ws.add_table(tab)
@@ -457,13 +461,13 @@ class Window(QMainWindow, Ui_MainWindow):
                         for column_number, cell_value in enumerate(rows):
                             ws[f'{get_column_letter(sc + column_number)}{row_number + 1}'].value = cell_value
 
-                    tab = worksheet.table.Table(displayName="Table2",
+                    tab = worksheet.table.Table(displayName=f"KeyTable{page_number}",
                                                 ref=f"{get_column_letter(sc)}1:{get_column_letter(sc + 3)}6")
                     tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium5", showRowStripes=False,
                                                                         showColumnStripes=False)
                     ws.add_table(tab)
 
-                    tab = worksheet.table.Table(displayName="Table3",
+                    tab = worksheet.table.Table(displayName=f"KCTable{page_number}",
                                                 ref=f"{get_column_letter(sc + 5)}1:{get_column_letter(sc + 6)}4")
                     tab.tableStyleInfo = worksheet.table.TableStyleInfo(name="TableStyleMedium6", showRowStripes=False,
                                                                         showColumnStripes=False)

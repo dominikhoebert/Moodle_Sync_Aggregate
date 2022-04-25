@@ -6,16 +6,26 @@ from openpyxl.formatting.rule import ColorScaleRule, CellIsRule, FormulaRule
 
 
 def text_formula(search_for, range):
-    return [f'NOT(ISERROR(SEARCH("{search_for}",{range[:2]})))']
+    r = range.split(':')[0]
+    return [f'NOT(ISERROR(SEARCH("{search_for}",{r})))']
 
 
 def custom_conditional_formatting(ws, range, type, start=6, end=10, competence='N'):
     bgcolors = {'EKv': "C6EFCE", 'EKü': "C4D79B", 'GKv': "FFEB9C", 'GKü': "FFC000", 'N': "FFC7CE"}
-    style_ekv = DifferentialStyle(font=Font(color="006100"), fill=PatternFill(bgColor=bgcolors['EKv']))
-    style_eku = DifferentialStyle(font=Font(color="006100"), fill=PatternFill(bgColor=bgcolors['EKü']))
-    style_gkv = DifferentialStyle(font=Font(color="9C5700"), fill=PatternFill(bgColor=bgcolors['GKv']))
-    style_gku = DifferentialStyle(font=Font(color="9C5700"), fill=PatternFill(bgColor=bgcolors['GKü']))
-    style_n = DifferentialStyle(font=Font(color="9C0006"), fill=PatternFill(bgColor=bgcolors['N']))
+    style_ekv = DifferentialStyle(font=Font(color="006100"),
+                                  fill=PatternFill(start_color=bgcolors['EKv'], end_color=bgcolors['EKv'],
+                                                   fill_type='solid'))
+    style_eku = DifferentialStyle(font=Font(color="006100"),
+                                  fill=PatternFill(start_color=bgcolors['EKü'], end_color=bgcolors['EKü'],
+                                                   fill_type='solid'))
+    style_gkv = DifferentialStyle(font=Font(color="9C5700"),
+                                  fill=PatternFill(start_color=bgcolors['GKv'], end_color=bgcolors['GKv'],
+                                                   fill_type='solid'))
+    style_gku = DifferentialStyle(font=Font(color="9C5700"),
+                                  fill=PatternFill(start_color=bgcolors['GKü'], end_color=bgcolors['GKü'],
+                                                   fill_type='solid'))
+    style_n = DifferentialStyle(font=Font(color="9C0006"),
+                                fill=PatternFill(start_color=bgcolors['N'], end_color=bgcolors['N'], fill_type='solid'))
 
     if type == 'GEK':
         ws.conditional_formatting.add(range, Rule(type="containsText", operator='containsText', dxf=style_ekv,
@@ -43,7 +53,8 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10, competence='
     elif type == 'points':
         ws.conditional_formatting.add(range,
                                       CellIsRule(operator='lessThan', formula=[start], stopIfTrue=False,
-                                                 fill=PatternFill(bgColor="F8696B")))
+                                                 fill=PatternFill(start_color="F8696B", end_color="F8696B",
+                                                                  fill_type='solid')))
         ws.conditional_formatting.add(range,
                                       ColorScaleRule(start_type='num', start_value=start, start_color='FBAA77',
                                                      mid_type='percent', mid_value=70, mid_color='FFEB84',
@@ -55,7 +66,8 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10, competence='
     elif type == 'group':
         ws.conditional_formatting.add(range,
                                       CellIsRule(operator='notEqual', formula=['B2'], stopIfTrue=False,
-                                                 fill=PatternFill(bgColor="F8696B")))
+                                                 fill=PatternFill(start_color="F8696B", end_color="F8696B",
+                                                                  fill_type='solid')))
     elif type == 'sum':
         ws.conditional_formatting.add(range, ColorScaleRule(start_type='min', start_color='FFFFFF', end_type='max',
                                                             end_color=bgcolors[competence]))
@@ -66,7 +78,6 @@ def custom_conditional_formatting(ws, range, type, start=6, end=10, competence='
                                                   formula=text_formula('-', range)))
 
 
-
 if __name__ == '__main__':
     wb = Workbook()
     ws = wb.active
@@ -74,5 +85,8 @@ if __name__ == '__main__':
     custom_conditional_formatting(ws, 'A2:A5', 'GK')
     custom_conditional_formatting(ws, 'B2:B5', 'EK')
     custom_conditional_formatting(ws, 'C2:C7', 'GEK')
+    custom_conditional_formatting(ws, 'Z2:Z7', 'GEK')
+    custom_conditional_formatting(ws, 'AA2:AA7', 'GEK')
+
 
     wb.save("formated.xlsx")

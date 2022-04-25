@@ -31,19 +31,22 @@ Token benötigt.
 
 ## TODOs
 
-- ~~Using LDAP for studentlist~~
-- BUG: some conditional formatting not working
-- add configparser
-- Download multiple and export into one file
-- Download Progress Bar (multiprocessing?)
+- rework gui
 - Download and Merge Grundkompetenzüberprüfungen
 - Create Grundkompetenzüberprüfungen list
-- rework gui
+- add configparser
+- Download Progress Bar (multiprocessing?, asyncio?)
+- import excel
+- merge (selected columns from) imported excel
 - sort columns by module number/competence number (SYT2 1abHIT)
 - andere Berechnungen?
 - statistics? anzahl an noten, kompetenzen, schüler, ...
 - graphes for statistics?
 - export as json
+- ~~Download multiple and export into one file~~
+- ~~Using LDAP for studentlist~~
+- ~~BUG: some conditional formatting not working~~
+- ~~Dont save when page already exists~~
 - ~~Kompetenzzähler~~
 - ~~Berechnung und Streichungen von WH/Wiederholung/SMÜ~~
 - ~~add Cancel Number in settings~~
