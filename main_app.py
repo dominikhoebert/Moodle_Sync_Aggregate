@@ -8,7 +8,7 @@ from openpyxl import Workbook, worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QCheckBox, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QCheckBox, QFileDialog, QScrollArea, QVBoxLayout, QGroupBox
 from PyQt5.QtCore import QSettings, QPoint, QSize
 
 from main_window import Ui_MainWindow
@@ -154,6 +154,14 @@ class Window(QMainWindow, Ui_MainWindow):
         super().__init__(parent)
         self.setupUi(self)
 
+        self.verticalLayout_3 = QVBoxLayout()
+        self.groupbox = QGroupBox('Grades')
+        self.groupbox.setLayout(self.verticalLayout_3)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidget(self.groupbox)
+        self.scroll_area.setWidgetResizable(True)
+        self.verticalLayout_2.addWidget(self.scroll_area)
+
         self.export_pushButton.setEnabled(False)
         self.save_pushButton.setEnabled(False)
         self.merge_pushButton.setEnabled(False)
@@ -165,19 +173,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self.export_pushButton.clicked.connect(self.export_grades)
         self.reload_pushButton.clicked.connect(self.download_courses)
         self.actionSettings.triggered.connect(self.open_settings)
-        self.all_none_checkBox.stateChanged.connect(self.all_none_checkbox_changed)
         self.save_pushButton.clicked.connect(self.save_grades)
         self.merge_pushButton.clicked.connect(self.merge)
 
         # Data
         self.current_course = None  # Text
         self.courses = None  # Dict Course name:id
-        # self.grades = None  # Dataframe of Student name, Modules and Grades
-        # self.pages = {}  # dict of course names to Grades Dataframes
         self.checkboxes = None  # List of Checkboxes for Modules
         self.student_list = None  # Dataframe Name Klasse
-        # self.competences = None  # Dict competence number as string eg. '21' (for 2.1) to Module Names
-        # self.competence_helper = None  # Dict competence_name to competence number
         self.competence_catalog = open_competence_names_katalog('modules.json')
         self.grade_book = GradeBook(self.competence_catalog)
         self.current_grades_df = None
@@ -241,7 +244,7 @@ class Window(QMainWindow, Ui_MainWindow):
             try:
                 self.courses = self.moodle.get_recent_courses()
                 self.set_courses()
-                self.download_pushButton.setEnabled(self.all_none_checkBox.checkState())
+                self.download_pushButton.setEnabled(True)
             except Exception as e:
                 show_messagebox("Failed to load courses. Please check Settings.", e)
         else:
@@ -324,15 +327,19 @@ class Window(QMainWindow, Ui_MainWindow):
         """ creates checkboxes for every module """
         self.checkboxes = []
         # delete old checkboxes
-        for i in reversed(range(self.tasks_verticalLayout.count())):
-            self.tasks_verticalLayout.itemAt(i).widget().setParent(None)
+        for i in reversed(range(self.verticalLayout_3.count())):
+            self.verticalLayout_3.itemAt(i).widget().setParent(None)
 
         # create checkboxes
+        self.all_none_checkBox = QCheckBox("All/None")
+        self.all_none_checkBox.setChecked(True)
+        self.verticalLayout_3.addWidget(self.all_none_checkBox)
+        self.all_none_checkBox.stateChanged.connect(self.all_none_checkbox_changed)
         for module in list(grades.columns):
             if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email', 'Punkte']:
                 cb = QCheckBox(module, self)
                 cb.setChecked(True)
-                self.tasks_verticalLayout.addWidget(cb)
+                self.verticalLayout_3.addWidget(cb)
                 self.checkboxes.append(cb)
 
         self.save_pushButton.setEnabled(True)

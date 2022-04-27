@@ -6,16 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1014</width>
-    <height>843</height>
+    <width>745</width>
+    <height>503</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Moodle Sync</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_2">
-    <item row="0" column="0">
+   <layout class="QVBoxLayout" name="verticalLayout_3">
+    <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -35,41 +35,11 @@
        </layout>
       </widget>
       <widget class="QWidget" name="verticalLayoutWidget_2">
-       <layout class="QFormLayout" name="formLayout">
-        <property name="rowWrapPolicy">
-         <enum>QFormLayout::WrapLongRows</enum>
-        </property>
-        <property name="labelAlignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-        </property>
-        <item row="0" column="0">
-         <widget class="QLabel" name="tasks_label">
-          <property name="text">
-           <string>Grades</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QCheckBox" name="all_none_checkBox">
-          <property name="text">
-           <string>All/None</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <layout class="QVBoxLayout" name="tasks_verticalLayout"/>
-        </item>
-       </layout>
+       <layout class="QVBoxLayout" name="verticalLayout_2"/>
       </widget>
      </widget>
     </item>
-    <item row="1" column="0">
+    <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QPushButton" name="reload_pushButton">
@@ -118,7 +88,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1014</width>
+     <width>745</width>
      <height>24</height>
     </rect>
    </property>
@@ -139,7 +109,6 @@
  </widget>
  <tabstops>
   <tabstop>courselistWidget</tabstop>
-  <tabstop>all_none_checkBox</tabstop>
   <tabstop>reload_pushButton</tabstop>
   <tabstop>download_pushButton</tabstop>
   <tabstop>save_pushButton</tabstop>
