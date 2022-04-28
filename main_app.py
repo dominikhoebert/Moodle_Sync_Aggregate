@@ -8,8 +8,9 @@ from openpyxl import Workbook, worksheet
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QCheckBox, QFileDialog, QScrollArea, QVBoxLayout, QGroupBox
-from PyQt5.QtCore import QSettings, QPoint, QSize
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QCheckBox, QFileDialog, QScrollArea, QVBoxLayout, \
+    QGroupBox
+from PyQt5.QtCore import QSettings, QPoint, QSize, Qt
 
 from main_window import Ui_MainWindow
 from SettingsDlg import SettingsDlg
@@ -154,13 +155,21 @@ class Window(QMainWindow, Ui_MainWindow):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.verticalLayout_3 = QVBoxLayout()
+        self.gradesLayout = QVBoxLayout()
         self.groupbox = QGroupBox('Grades')
-        self.groupbox.setLayout(self.verticalLayout_3)
+        self.groupbox.setLayout(self.gradesLayout)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidget(self.groupbox)
         self.scroll_area.setWidgetResizable(True)
         self.verticalLayout_2.addWidget(self.scroll_area)
+
+        self.pagesLayout = QVBoxLayout()
+        self.groupbox_2 = QGroupBox('Pages')
+        self.groupbox_2.setLayout(self.pagesLayout)
+        self.scroll_area_2 = QScrollArea()
+        self.scroll_area_2.setWidget(self.groupbox_2)
+        self.scroll_area_2.setWidgetResizable(True)
+        self.verticalLayout_3.addWidget(self.scroll_area_2)
 
         self.export_pushButton.setEnabled(False)
         self.save_pushButton.setEnabled(False)
@@ -327,19 +336,19 @@ class Window(QMainWindow, Ui_MainWindow):
         """ creates checkboxes for every module """
         self.checkboxes = []
         # delete old checkboxes
-        for i in reversed(range(self.verticalLayout_3.count())):
-            self.verticalLayout_3.itemAt(i).widget().setParent(None)
+        for i in reversed(range(self.gradesLayout.count())):
+            self.gradesLayout.itemAt(i).widget().setParent(None)
 
         # create checkboxes
         self.all_none_checkBox = QCheckBox("All/None")
         self.all_none_checkBox.setChecked(True)
-        self.verticalLayout_3.addWidget(self.all_none_checkBox)
+        self.gradesLayout.addWidget(self.all_none_checkBox)
         self.all_none_checkBox.stateChanged.connect(self.all_none_checkbox_changed)
         for module in list(grades.columns):
             if module not in ["Schüler", 'Klasse', 'Gruppen', 'Email', 'Punkte']:
                 cb = QCheckBox(module, self)
                 cb.setChecked(True)
-                self.verticalLayout_3.addWidget(cb)
+                self.gradesLayout.addWidget(cb)
                 self.checkboxes.append(cb)
 
         self.save_pushButton.setEnabled(True)

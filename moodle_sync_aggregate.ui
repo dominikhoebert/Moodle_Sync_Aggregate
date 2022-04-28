@@ -14,25 +14,33 @@
    <string>Moodle Sync</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_3">
+   <layout class="QVBoxLayout" name="verticalLayout_4">
     <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QWidget" name="verticalLayoutWidget">
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Courses</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QListWidget" name="courselistWidget"/>
-        </item>
-       </layout>
+      <widget class="QSplitter" name="splitter_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <widget class="QWidget" name="verticalLayoutWidget">
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Courses</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="courselistWidget"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="verticalLayoutWidget_3">
+        <layout class="QVBoxLayout" name="verticalLayout_3"/>
+       </widget>
       </widget>
       <widget class="QWidget" name="verticalLayoutWidget_2">
        <layout class="QVBoxLayout" name="verticalLayout_2"/>
@@ -40,7 +48,7 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QPushButton" name="reload_pushButton">
         <property name="text">
@@ -74,9 +82,6 @@
         <property name="text">
          <string>Export</string>
         </property>
-        <property name="checkable">
-         <bool>false</bool>
-        </property>
        </widget>
       </item>
      </layout>
@@ -107,14 +112,6 @@
    </property>
   </action>
  </widget>
- <tabstops>
-  <tabstop>courselistWidget</tabstop>
-  <tabstop>reload_pushButton</tabstop>
-  <tabstop>download_pushButton</tabstop>
-  <tabstop>save_pushButton</tabstop>
-  <tabstop>merge_pushButton</tabstop>
-  <tabstop>export_pushButton</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>
