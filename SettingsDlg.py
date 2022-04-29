@@ -40,12 +40,13 @@ class SettingsDlg(QDialog):
 
     def download(self):
         ldap_studenlist_download(self.ui.username_lineEdit.text() + self.ui.extension_lineEdit.text(),
-                                 self.ui.password_lineEdit.text(), )
+                                 self.ui.password_lineEdit.text(), self.filename)
         self.update_studentlistlabel()
 
     def update_studentlistlabel(self):
         try:
-            time = datetime.fromtimestamp(os.path.getmtime(self.filename))  # TODO test in windows
+            time = datetime.fromtimestamp(os.path.getmtime(self.filename))
+            time = time.strftime('%Y-%m-%d %H:%M')
         except FileNotFoundError:
             time = "File not found!"
-        self.ui.last_download_label.setText("last download: " + time.strftime('%Y-%m-%d %H:%M'))
+        self.ui.last_download_label.setText("last download: " + time)
