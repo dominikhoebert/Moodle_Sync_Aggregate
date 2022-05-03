@@ -84,7 +84,7 @@ def load_student_list(path):
     try:
         return pd.read_csv(path)
     except FileNotFoundError as e:
-        print(f"No studentlist at {path}", e)
+        show_messagebox(f"No studentlist at {path}", e)
         return None
 
 
@@ -156,6 +156,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
         self.gradesLayout = QVBoxLayout()
+        self.gradesLayout.setAlignment(Qt.AlignTop)
         self.groupbox = QGroupBox('Grades')
         self.groupbox.setLayout(self.gradesLayout)
         self.scroll_area = QScrollArea()
@@ -164,6 +165,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.verticalLayout_2.addWidget(self.scroll_area)
 
         self.pagesLayout = QVBoxLayout()
+        self.pagesLayout.setAlignment(Qt.AlignTop)
         self.groupbox_2 = QGroupBox('Pages')
         self.groupbox_2.setLayout(self.pagesLayout)
         self.scroll_area_2 = QScrollArea()
@@ -188,7 +190,8 @@ class Window(QMainWindow, Ui_MainWindow):
         # Data
         self.current_course = None  # Text
         self.courses = None  # Dict Course name:id
-        self.checkboxes = None  # List of Checkboxes for Modules
+        self.modules_checkboxes = None  # List of Checkboxes for Modules
+        self.pages_checkboxes = []  # List of Checkboxes for Pages
         self.student_list = None  # Dataframe Name Klasse
         self.competence_catalog = open_competence_names_katalog('modules.json')
         self.grade_book = GradeBook(self.competence_catalog)
@@ -334,7 +337,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def create_modules_list(self, grades):
         """ creates checkboxes for every module """
-        self.checkboxes = []
+        self.modules_checkboxes = []
         # delete old checkboxes
         for i in reversed(range(self.gradesLayout.count())):
             self.gradesLayout.itemAt(i).widget().setParent(None)
@@ -349,7 +352,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 cb = QCheckBox(module, self)
                 cb.setChecked(True)
                 self.gradesLayout.addWidget(cb)
-                self.checkboxes.append(cb)
+                self.modules_checkboxes.append(cb)
 
         self.save_pushButton.setEnabled(True)
         if len(self.grade_book.pages) > 0:
@@ -358,15 +361,19 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def remove_columns(self, dataframe):
         """ removes unchecked columns from modules/columns from grades dataframe"""
-        columns_to_drop = [cb.text() for cb in self.checkboxes if cb.checkState() == 0]
+        columns_to_drop = [cb.text() for cb in self.modules_checkboxes if cb.checkState() == 0]
         return dataframe.drop(columns_to_drop, axis=1)
 
     def save_grades(self):
         """store grades dataframe in gradebook"""
         if self.grade_book.get_page_from_name(self.current_course) is None:
             self.grade_book.add_page(self.current_course, self.remove_columns(self.current_grades_df))
+            cb = QCheckBox(self.current_course, self)
+            cb.setChecked(True)
+            self.pagesLayout.addWidget(cb)
+            self.pages_checkboxes.append(cb)
         else:
-            show_messagebox(f"{self.current_course} is already saved.")
+            show_messagebox(f"{self.current_course} is already saved.")  # TODO override instead if error message
 
     def merge(self):
         grades = self.remove_columns(self.current_grades_df)
@@ -381,6 +388,18 @@ class Window(QMainWindow, Ui_MainWindow):
         if len(self.grade_book.pages) == 0:
             self.save_grades()
 
+        # deleting not wonted pages
+        delete_cb = []
+        for cb in self.pages_checkboxes:
+            if cb.checkState() == 0:
+                self.grade_book.pages.remove(self.grade_book.get_page_from_name(cb.text()))
+                cb.setParent(None)
+                delete_cb.append(cb)
+
+        for cb in delete_cb:
+            self.pages_checkboxes.remove(cb)
+
+        # creating worksheets and iterating through pages
         wb = Workbook()
         for page_number, page in enumerate(self.grade_book.pages):
 
@@ -611,7 +630,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.login()
 
     def all_none_checkbox_changed(self):
-        for cb in self.checkboxes:
+        for cb in self.modules_checkboxes:
             cb.setChecked(self.all_none_checkBox.checkState())
 
     def closeEvent(self, e):
