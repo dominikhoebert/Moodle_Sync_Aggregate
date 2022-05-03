@@ -424,7 +424,8 @@ class Window(QMainWindow, Ui_MainWindow):
                                                   end=f'${cell.column_letter}${max_row + 3}')
                     ws = create_points_config(cell, max_row, ws)
 
-                elif len(module) > 1 and module[1] == '.':  # if Kompetenz
+                elif len(module) > 1 and module[1] == '.' and module[0].isnumeric() and module[
+                    2].isnumeric():  # if Kompetenz
                     comp_list.append(cell.column_letter)
 
                     modules = []
