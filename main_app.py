@@ -337,6 +337,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def create_modules_list(self, grades):
         """ creates checkboxes for every module """
+        self.groupbox.setTitle("Grades " + self.current_course)
         self.modules_checkboxes = []
         # delete old checkboxes
         for i in reversed(range(self.gradesLayout.count())):
@@ -368,19 +369,34 @@ class Window(QMainWindow, Ui_MainWindow):
         """store grades dataframe in gradebook"""
         if self.grade_book.get_page_from_name(self.current_course) is None:
             self.grade_book.add_page(self.current_course, self.remove_columns(self.current_grades_df))
-            cb = QCheckBox(self.current_course, self)
-            cb.setChecked(True)
-            self.pagesLayout.addWidget(cb)
-            self.pages_checkboxes.append(cb)
+            self.add_pages_checkbox(self.current_course)
         else:
-            show_messagebox(f"{self.current_course} is already saved.")  # TODO override instead if error message
+            show_messagebox(f"{self.current_course} is already saved.")  # TODO override instead of error message
+
+    def add_pages_checkbox(self, name):
+        cb = QCheckBox(name, self)
+        cb.setChecked(True)
+        self.pagesLayout.addWidget(cb)
+        self.pages_checkboxes.append(cb)
 
     def merge(self):
-        grades = self.remove_columns(self.current_grades_df)
-        # TODO code functionality
-        # open merge dialog
-        # create saved pages checkboxes to merge to
-        # merge
+        """ merges current page to selected pages in gradebook """
+        r_page = self.remove_columns(self.current_grades_df)
+        # get page from gradebook.pages
+        l_pages_merge = [cb.text() for cb in self.pages_checkboxes if cb.isChecked()]
+        for l_page_name in l_pages_merge:
+            l_grades = self.grade_book.get_page_from_name(l_page_name).grades.copy()
+            # merge
+            l_grades = l_grades.merge(right=r_page, how="left", left_on="Email", right_on="Email")
+            # drop columns
+            l_grades = l_grades.drop(["Schüler_y", "Klasse_y", "Gruppen_y", "Email_y", "Punkte_y"], axis=1, errors="ignore")
+            l_grades = l_grades.rename(columns={'Schüler_x': 'Schüler', 'Klasse_x': 'Klasse', 'Gruppen_x': 'Gruppen', 'Punkte_x': 'Punkte'})
+            l_grades = l_grades.fillna('')
+            # save
+            merged_course_name = f"{l_page_name}+"
+            self.grade_book.add_page(merged_course_name, l_grades)
+            self.add_pages_checkbox(merged_course_name)
+
 
     def export_grades(self):
         """ creates a worksheet for every gradepage.
@@ -388,7 +404,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if len(self.grade_book.pages) == 0:
             self.save_grades()
 
-        # deleting not wonted pages
+        # deleting not wanted pages
         delete_cb = []
         for cb in self.pages_checkboxes:
             if cb.checkState() == 0:

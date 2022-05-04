@@ -31,14 +31,15 @@ Token benötigt.
 
 ## TODOs
 
-- rework gui
+- ~~rework gui~~
 - Download and Merge Grundkompetenzüberprüfungen
 - Create Grundkompetenzüberprüfungen list
 - add configparser
+- bestehungsgrenze aus modul
 - Download Progress Bar (multiprocessing?, asyncio?)
+- statusbar
 - import excel
 - merge (selected columns from) imported excel
-- sort columns by module number/competence number (SYT2 1abHIT)
 - andere Berechnungen?
 - statistics? anzahl an noten, kompetenzen, schüler, ...
 - graphes for statistics?
