@@ -397,7 +397,6 @@ class Window(QMainWindow, Ui_MainWindow):
             self.grade_book.add_page(merged_course_name, l_grades)
             self.add_pages_checkbox(merged_course_name)
 
-
     def export_grades(self):
         """ creates a worksheet for every gradepage.
         works through the title name for formating and forumlar creation """
@@ -448,6 +447,11 @@ class Window(QMainWindow, Ui_MainWindow):
                 elif module.startswith("GEK"):
                     custom_conditional_formatting(ws, cell_range, 'GEK')
                     page.get_module_by_name(module).column_letter = cell.column_letter
+                elif module.startswith("SYT"):
+                    custom_conditional_formatting(ws, cell_range, type='points2',
+                                                  start=f'${cell.column_letter}${max_row + 2}',
+                                                  end=f'${cell.column_letter}${max_row + 3}')
+                    ws = create_points_config(cell, max_row, ws)
 
                 elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
                     wh_letter_list.append(cell.column_letter)

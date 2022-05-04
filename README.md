@@ -32,6 +32,7 @@ Token benötigt.
 ## TODOs
 
 - ~~rework gui~~
+- remove warnings
 - Download and Merge Grundkompetenzüberprüfungen
 - Create Grundkompetenzüberprüfungen list
 - add configparser
