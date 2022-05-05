@@ -32,8 +32,9 @@ Token benötigt.
 ## TODOs
 
 - ~~rework gui~~
+- BUG: self.current_course switches when changing course without downloading it!
 - adding negative kompetenzen for GKüberprüfung/merged
-- remove warnings
+- ~~remove warnings~~
 - ~~Download and Merge Grundkompetenzüberprüfungen~~
 - Create Grundkompetenzüberprüfungen list
 - add configparser

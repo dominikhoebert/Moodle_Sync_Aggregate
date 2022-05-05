@@ -432,6 +432,10 @@ class Window(QMainWindow, Ui_MainWindow):
         wb = Workbook()
         for page_number, page in enumerate(self.grade_book.pages):
 
+            for col in page.grades.columns:
+                if col.startswith("SYT"):
+                    page.grades.insert(len(page.grades.columns)-1, col + "*", '=')
+
             ws = grades_page_to_excel_worksheet(page, wb)
             ws = set_column_width(ws)
             ws.freeze_panes = ws['B1']
@@ -466,12 +470,11 @@ class Window(QMainWindow, Ui_MainWindow):
                         # find Kompetenz Number in module name
                         dot_index = module.find(".")
                         comp_number = module[dot_index - 1:dot_index + 2]
-                        print(comp_number)
                         # Formular =WENN(ISTZAHL(AK2);AK2;WENN(ISTZAHL(FINDEN("1.2";AE2));"-";""))
-                        ws.insert_cols(cell.column + 1)
-                        ws.column_dimensions[cell.column_letter].hidden = True
-                        n_cell = ws[get_column_letter(cell.column + 1) + "1"]
-                        n_cell.value = f"{module}*"
+                        # ws.insert_cols(cell.column + 1)
+                        # ws.column_dimensions[cell.column_letter].hidden = True
+                        # n_cell = ws[get_column_letter(cell.column + 1) + "1"]
+                        # n_cell.value = f"{module}*"
 
                         # for c_cell in ws[cell.column_letter]:
                         #     if c_cell.value == "" or c_cell.value == "-":
@@ -480,11 +483,11 @@ class Window(QMainWindow, Ui_MainWindow):
                         #         else:
                         #             c_cell.value = ""
                         #     print(c_cell.column_letter, c_cell.row, c_cell.value)
-                        new_range = f"{get_column_letter(cell.column + 1)}2:{get_column_letter(cell.column + 1)}{max_row}"
-                        custom_conditional_formatting(ws, new_range, type='points2',
-                                                      start=f'${cell.column_letter}${max_row + 2}',
-                                                      end=f'${cell.column_letter}${max_row + 3}')
-                        ws = create_points_config(get_column_letter(cell.column + 1), max_row, ws)
+                        # new_range = f"{get_column_letter(cell.column + 1)}2:{get_column_letter(cell.column + 1)}{max_row}"
+                        # custom_conditional_formatting(ws, new_range, type='points2',
+                        #                               start=f'${cell.column_letter}${max_row + 2}',
+                        #                               end=f'${cell.column_letter}${max_row + 3}')
+                        # ws = create_points_config(get_column_letter(cell.column + 1), max_row, ws)
 
                 elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
                     wh_letter_list.append(cell.column_letter)
