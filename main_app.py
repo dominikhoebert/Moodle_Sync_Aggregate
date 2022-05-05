@@ -306,7 +306,7 @@ class Window(QMainWindow, Ui_MainWindow):
             print(f"{self.current_course} loaded from file")
         else:
             grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
-            grades.to_csv(f'data/{self.current_course}.csv')  #TODO create mode for this
+            grades.to_csv(f'data/{self.current_course}.csv')  # TODO create mode for this
             print(f"{self.current_course} saved to file")
         grades = self.merge_group_to_grades(grades)
         grades = grades.sort_values(by=['Gruppen', 'Schüler'])
@@ -434,7 +434,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
             for col in page.grades.columns:
                 if col.startswith("SYT"):
-                    page.grades.insert(len(page.grades.columns)-1, col + "*", '=')
+                    try:
+                        page.grades.insert(len(page.grades.columns) - 1, str(col) + "*", '=')  # TODO change positioning
+                    except ValueError:
+                        pass
 
             ws = grades_page_to_excel_worksheet(page, wb)
             ws = set_column_width(ws)
@@ -451,6 +454,8 @@ class Window(QMainWindow, Ui_MainWindow):
             max_row = ws.max_row
             comp_list = []
             wh_letter_list = []
+            original_gkp_dict = {}
+            gkp_columns_dict = {}
             negative_comp_col = None
             for cell in ws[1]:
                 module = str(cell.value)
@@ -465,29 +470,28 @@ class Window(QMainWindow, Ui_MainWindow):
                 elif module.startswith("GEK"):
                     custom_conditional_formatting(ws, cell_range, 'GEK')
                     page.get_module_by_name(module).column_letter = cell.column_letter
-                elif module.startswith("SYT") and not module.endswith("*"):
-                    if negative_comp_col is not None:
-                        # find Kompetenz Number in module name
-                        dot_index = module.find(".")
-                        comp_number = module[dot_index - 1:dot_index + 2]
-                        # Formular =WENN(ISTZAHL(AK2);AK2;WENN(ISTZAHL(FINDEN("1.2";AE2));"-";""))
-                        # ws.insert_cols(cell.column + 1)
-                        # ws.column_dimensions[cell.column_letter].hidden = True
-                        # n_cell = ws[get_column_letter(cell.column + 1) + "1"]
-                        # n_cell.value = f"{module}*"
-
-                        # for c_cell in ws[cell.column_letter]:
-                        #     if c_cell.value == "" or c_cell.value == "-":
-                        #         if comp_number in ws[negative_comp_col + str(c_cell.row)].value:
-                        #             c_cell.value = "-"
-                        #         else:
-                        #             c_cell.value = ""
-                        #     print(c_cell.column_letter, c_cell.row, c_cell.value)
-                        # new_range = f"{get_column_letter(cell.column + 1)}2:{get_column_letter(cell.column + 1)}{max_row}"
-                        # custom_conditional_formatting(ws, new_range, type='points2',
-                        #                               start=f'${cell.column_letter}${max_row + 2}',
-                        #                               end=f'${cell.column_letter}${max_row + 3}')
-                        # ws = create_points_config(get_column_letter(cell.column + 1), max_row, ws)
+                elif module.startswith("SYT") or module.startswith("GKP"):
+                    if module.endswith("*"):
+                        if negative_comp_col is not None:
+                            # find Kompetenz Number in module name
+                            dot_index = module.find(".")
+                            comp_number = module[dot_index - 1:dot_index + 2]
+                            # Formular =WENN(ISTZAHL(AK2);AK2;WENN(ISTZAHL(FINDEN("1.2";AE2));"-";""))
+                            # add Formular
+                            origin_column = original_gkp_dict[module[:-1]]
+                            formular = f'=IF(ISNUMBER({origin_column}#),{origin_column}#,IF(ISNUMBER' \
+                                       f'(SEARCH("{comp_number}",{negative_comp_col}#)),"-",""))'
+                            gkp_columns_dict[comp_number] = cell.column_letter
+                            for c_cell in ws[cell.column_letter]:
+                                if c_cell.row > 1:
+                                    c_cell.value = formular.replace('#', str(c_cell.row))
+                            custom_conditional_formatting(ws, cell_range, type='points2',
+                                                          start=f'${cell.column_letter}${max_row + 2}',
+                                                          end=f'${cell.column_letter}${max_row + 3}')
+                            ws = create_points_config(cell.column_letter, max_row, ws)
+                    else:
+                        ws.column_dimensions[cell.column_letter].hidden = True
+                        original_gkp_dict[module] = cell.column_letter
 
                 elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
                     wh_letter_list.append(cell.column_letter)
@@ -591,19 +595,29 @@ class Window(QMainWindow, Ui_MainWindow):
                 elif module == 'Gruppen':
                     custom_conditional_formatting(ws, cell_range, type='group')
 
-                elif module == 'Negative Kompetenzen' and self.negative_competences:
-                    negative_comp_col = cell.column_letter
-                    formular_parts = []
-                    for comp_letter in comp_list:
-                        comp_number = ws[f'{comp_letter}1'].value[:3]
-                        formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
-                                              f'{comp_letter}#)))>0,"{comp_number};","")')
-                    formular = " & ".join(formular_parts)
+                elif module.startswith('Negative Kompetenzen') and self.negative_competences:
+                    if module[-1].isnumeric():
+                        # formular: =WENN(ODER(AO2="-";AO2<AO$80);"1.1;";"")&WENN(ODER(AP2="-";AP2<AP$80);"1.2;";"")
+                        formular = '='
+                        for comp_number, col_letter in gkp_columns_dict.items():
+                            formular += f'IF(OR({col_letter}#="-",{col_letter}#<{col_letter}{max_row + 2}),"' \
+                                        f'{comp_number};","")&'
+                        for c_cell in ws[cell.column_letter]:
+                            if c_cell.row > 1:
+                                c_cell.value = formular.replace('#', str(c_cell.row))[:-1]
+                    else:
+                        formular_parts = []
+                        for comp_letter in comp_list:
+                            comp_number = ws[f'{comp_letter}1'].value[:3]
+                            formular_parts.append('IF(SUMPRODUCT(--ISNUMBER(FIND({"n";"-"},' +
+                                                  f'{comp_letter}#)))>0,"{comp_number};","")')
+                        formular = " & ".join(formular_parts)
 
-                    for c_cell in ws[cell.column_letter]:
-                        if c_cell.value == '=':
-                            c_cell.value += formular.replace('#', str(c_cell.row))
+                        for c_cell in ws[cell.column_letter]:
+                            if c_cell.value == '=':
+                                c_cell.value += formular.replace('#', str(c_cell.row))
                     ws.column_dimensions[cell.column_letter].width = 14
+                    negative_comp_col = cell.column_letter
 
                 elif module in ['ΣN', 'ΣGKü', 'ΣGKv', 'ΣEKü', 'ΣEKv'] and self.competence_counter:
                     custom_conditional_formatting(ws, cell_range, type='sum', competence=module[1:])
