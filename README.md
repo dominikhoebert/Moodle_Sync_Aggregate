@@ -32,15 +32,15 @@ Token benötigt.
 ## TODOs
 
 - ~~rework gui~~
+- adding negative kompetenzen for GKüberprüfung/merged
 - remove warnings
-- Download and Merge Grundkompetenzüberprüfungen
+- ~~Download and Merge Grundkompetenzüberprüfungen~~
 - Create Grundkompetenzüberprüfungen list
 - add configparser
 - bestehungsgrenze aus modul
 - Download Progress Bar (multiprocessing?, asyncio?)
 - statusbar
-- import excel
-- merge (selected columns from) imported excel
+- import excel for merging
 - andere Berechnungen?
 - statistics? anzahl an noten, kompetenzen, schüler, ...
 - graphes for statistics?

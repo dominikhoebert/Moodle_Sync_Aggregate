@@ -2,6 +2,7 @@ import sys
 from datetime import datetime
 from locale import atof, setlocale, LC_NUMERIC
 import json
+import os
 
 import pandas as pd
 from openpyxl import Workbook, worksheet
@@ -139,14 +140,14 @@ def set_column_width(ws):
     return ws
 
 
-def create_points_config(cell, max_row, ws):
+def create_points_config(column_letter, max_row, ws):
     """ Creates a section at the button end of the table set the needed and max points for the conditional formating"""
     ws[f'A{max_row + 2}'].value = 'Bestehungsgrenze'
     ws[f'A{max_row + 2}'].font = Font(bold=True)
     ws[f'A{max_row + 3}'].value = 'Maximal erreichbar'
     ws[f'A{max_row + 3}'].font = Font(bold=True)
-    ws[f'{cell.column_letter}{max_row + 2}'].value = 6
-    ws[f'{cell.column_letter}{max_row + 3}'].value = 10
+    ws[f'{column_letter}{max_row + 2}'].value = 6
+    ws[f'{column_letter}{max_row + 3}'].value = 10
     return ws
 
 
@@ -298,7 +299,15 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.current_course is None:
             self.courselistWidget.setCurrentRow(0)
 
-        grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
+        files = [f.split(".")[0] for f in os.listdir('data/')]
+        if self.current_course in files:
+            grades = pd.read_csv(f"data/{self.current_course}.csv")
+            grades = grades.drop(['Unnamed: 0'], axis=1, errors='ignore')
+            print(f"{self.current_course} loaded from file")
+        else:
+            grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
+            grades.to_csv(f'data/{self.current_course}.csv')  #TODO create mode for this
+            print(f"{self.current_course} saved to file")
         grades = self.merge_group_to_grades(grades)
         grades = grades.sort_values(by=['Gruppen', 'Schüler'])
 
@@ -311,25 +320,25 @@ class Window(QMainWindow, Ui_MainWindow):
         current_page = GradePage(self.current_course, grades, self.competence_catalog)
 
         if self.mark_suggestion:
-            grades["Punkte"] = '='
-            grades["Notenvorschlag"] = '='
+            grades.insert(len(grades.columns), 'Punkte', '=')
+            grades.insert(len(grades.columns), 'Notenvorschlag', '=')
 
         if self.create_competence_columns:
             for competence in current_page.competences:
-                grades[competence.name] = '='
+                grades.insert(len(grades.columns), competence.name, '=')
 
         if self.negative_competences:
-            grades["Negative Kompetenzen"] = '='
+            grades.insert(len(grades.columns), 'Negative Kompetenzen', '=')
 
         if self.competence_counter:
-            grades['ΣN'] = '='
-            grades['ΣGKü'] = '='
-            grades['ΣGKv'] = '='
-            grades['ΣEKü'] = '='
-            grades['ΣEKv'] = '='
+            grades.insert(len(grades.columns), 'ΣN', '=')
+            grades.insert(len(grades.columns), 'ΣGKü', '=')
+            grades.insert(len(grades.columns), 'ΣGKv', '=')
+            grades.insert(len(grades.columns), 'ΣEKü', '=')
+            grades.insert(len(grades.columns), 'ΣEKv', '=')
 
         if self.wh_calculation:
-            grades['∅SMÜ'] = '='
+            grades.insert(len(grades.columns), '∅SMÜ', '=')
 
         self.current_grades_df = grades
 
@@ -389,8 +398,13 @@ class Window(QMainWindow, Ui_MainWindow):
             # merge
             l_grades = l_grades.merge(right=r_page, how="left", left_on="Email", right_on="Email")
             # drop columns
-            l_grades = l_grades.drop(["Schüler_y", "Klasse_y", "Gruppen_y", "Email_y", "Punkte_y"], axis=1, errors="ignore")
-            l_grades = l_grades.rename(columns={'Schüler_x': 'Schüler', 'Klasse_x': 'Klasse', 'Gruppen_x': 'Gruppen', 'Punkte_x': 'Punkte'})
+            l_grades = l_grades.drop(["Schüler_y", "Klasse_y", "Gruppen_y", "Email_y", "Punkte_y"], axis=1,
+                                     errors="ignore")
+            n = len([c for c in l_grades.columns if c.startswith("Negative Kompetenzen")])
+            l_grades = l_grades.rename(
+                columns={'Schüler_x': 'Schüler', 'Klasse_x': 'Klasse', 'Gruppen_x': 'Gruppen', 'Punkte_x': 'Punkte',
+                         "Negative Kompetenzen_x": "Negative Kompetenzen",
+                         "Negative Kompetenzen_y": f"Negative Kompetenzen{n}"})
             l_grades = l_grades.fillna('')
             # save
             merged_course_name = f"{l_page_name}+"
@@ -431,9 +445,9 @@ class Window(QMainWindow, Ui_MainWindow):
 
             # iterate first row of grades table
             max_row = ws.max_row
-            # comp_dict = {'GK': [], 'GEK': [], 'EK': []}
             comp_list = []
             wh_letter_list = []
+            negative_comp_col = None
             for cell in ws[1]:
                 module = str(cell.value)
                 cell_range = f"{cell.column_letter}2:{cell.column_letter}{max_row}"
@@ -447,11 +461,30 @@ class Window(QMainWindow, Ui_MainWindow):
                 elif module.startswith("GEK"):
                     custom_conditional_formatting(ws, cell_range, 'GEK')
                     page.get_module_by_name(module).column_letter = cell.column_letter
-                elif module.startswith("SYT"):
-                    custom_conditional_formatting(ws, cell_range, type='points2',
-                                                  start=f'${cell.column_letter}${max_row + 2}',
-                                                  end=f'${cell.column_letter}${max_row + 3}')
-                    ws = create_points_config(cell, max_row, ws)
+                elif module.startswith("SYT") and not module.endswith("*"):
+                    if negative_comp_col is not None:
+                        # find Kompetenz Number in module name
+                        dot_index = module.find(".")
+                        comp_number = module[dot_index - 1:dot_index + 2]
+                        print(comp_number)
+                        # Formular =WENN(ISTZAHL(AK2);AK2;WENN(ISTZAHL(FINDEN("1.2";AE2));"-";""))
+                        ws.insert_cols(cell.column + 1)
+                        ws.column_dimensions[cell.column_letter].hidden = True
+                        n_cell = ws[get_column_letter(cell.column + 1) + "1"]
+                        n_cell.value = f"{module}*"
+
+                        # for c_cell in ws[cell.column_letter]:
+                        #     if c_cell.value == "" or c_cell.value == "-":
+                        #         if comp_number in ws[negative_comp_col + str(c_cell.row)].value:
+                        #             c_cell.value = "-"
+                        #         else:
+                        #             c_cell.value = ""
+                        #     print(c_cell.column_letter, c_cell.row, c_cell.value)
+                        new_range = f"{get_column_letter(cell.column + 1)}2:{get_column_letter(cell.column + 1)}{max_row}"
+                        custom_conditional_formatting(ws, new_range, type='points2',
+                                                      start=f'${cell.column_letter}${max_row + 2}',
+                                                      end=f'${cell.column_letter}${max_row + 3}')
+                        ws = create_points_config(get_column_letter(cell.column + 1), max_row, ws)
 
                 elif module.startswith("Wiederholung") or module.startswith("SMÜ"):
                     wh_letter_list.append(cell.column_letter)
@@ -461,7 +494,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     custom_conditional_formatting(ws, cell_range, type='points',
                                                   start=f'${cell.column_letter}${max_row + 2}',
                                                   end=f'${cell.column_letter}${max_row + 3}')
-                    ws = create_points_config(cell, max_row, ws)
+                    ws = create_points_config(cell.column_letter, max_row, ws)
 
                 elif len(module) > 1 and module[1] == '.' and module[0].isnumeric() and module[
                     2].isnumeric():  # if Kompetenz
@@ -556,7 +589,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     custom_conditional_formatting(ws, cell_range, type='group')
 
                 elif module == 'Negative Kompetenzen' and self.negative_competences:
-
+                    negative_comp_col = cell.column_letter
                     formular_parts = []
                     for comp_letter in comp_list:
                         comp_number = ws[f'{comp_letter}1'].value[:3]
@@ -609,7 +642,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     custom_conditional_formatting(ws, cell_range, type='points',
                                                   start=f'${cell.column_letter}${max_row + 2}',
                                                   end=f'${cell.column_letter}${max_row + 3}')
-                    ws = create_points_config(cell, max_row, ws)
+                    ws = create_points_config(cell.column_letter, max_row, ws)
 
         # prepare for save to file
         directory = self.settings.value('dir', "")
