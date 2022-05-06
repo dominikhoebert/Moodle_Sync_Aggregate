@@ -432,12 +432,14 @@ class Window(QMainWindow, Ui_MainWindow):
         wb = Workbook()
         for page_number, page in enumerate(self.grade_book.pages):
 
-            for col in page.grades.columns:
-                if col.startswith("SYT"):
-                    try:
-                        page.grades.insert(len(page.grades.columns) - 1, str(col) + "*", '=')  # TODO change positioning
-                    except ValueError:
-                        pass
+            insert_columns = {}
+            for index, col in enumerate(page.grades.columns):
+                if col.startswith("SYT") and not col.endswith("*"):
+                    insert_columns[col] = index
+
+            for ind, col in enumerate(insert_columns):
+                index = insert_columns[col]
+                page.grades.insert(index+1+ind, col + "*", '=')
 
             ws = grades_page_to_excel_worksheet(page, wb)
             ws = set_column_width(ws)
@@ -503,8 +505,8 @@ class Window(QMainWindow, Ui_MainWindow):
                                                   end=f'${cell.column_letter}${max_row + 3}')
                     ws = create_points_config(cell.column_letter, max_row, ws)
 
-                elif len(module) > 1 and module[1] == '.' and module[0].isnumeric() and module[
-                    2].isnumeric():  # if Kompetenz
+                # if Kompetenz
+                elif len(module) > 1 and module[1] == '.' and module[0].isnumeric() and module[2].isnumeric():
                     comp_list.append(cell.column_letter)
 
                     modules = []
