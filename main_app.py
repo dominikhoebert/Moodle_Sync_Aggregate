@@ -602,7 +602,7 @@ class Window(QMainWindow, Ui_MainWindow):
                         # formular: =WENN(ODER(AO2="-";AO2<AO$80);"1.1;";"")&WENN(ODER(AP2="-";AP2<AP$80);"1.2;";"")
                         formular = '='
                         for comp_number, col_letter in gkp_columns_dict.items():
-                            formular += f'IF(OR({col_letter}#="-",{col_letter}#<{col_letter}{max_row + 2}),"' \
+                            formular += f'IF(OR({col_letter}#="-",{col_letter}#<{col_letter}${max_row + 2}),"' \
                                         f'{comp_number};","")&'
                         for c_cell in ws[cell.column_letter]:
                             if c_cell.row > 1:
