@@ -9,10 +9,11 @@ from ldap_download import ldap_studenlist_download
 
 class SettingsDlg(QDialog):
     def __init__(self, username, password, use_studentlist, studentlistpath, cancel_number, ldap_url,
-                 filename, config_text="", parent=None):
+                 filename, ldap_extension, config_text="", parent=None):
         super().__init__(parent)
         self.filename = filename
         self.ldap_url = ldap_url
+        self.ldap_extension = ldap_extension
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self.ui.checkBox.setChecked(use_studentlist)
@@ -37,9 +38,12 @@ class SettingsDlg(QDialog):
             self.ui.studentlist_lineEdit.setText(file)
 
     def download(self):
-        ldap_studenlist_download(self.ldap_url, self.ui.username_lineEdit.text() + self.ui.extension_lineEdit.text(),
-                                 self.ui.password_lineEdit.text(), self.filename)
-        self.update_studentlistlabel()
+        try:
+            ldap_studenlist_download(self.ldap_url, self.ui.username_lineEdit.text() + self.ldap_extension,
+                                     self.ui.password_lineEdit.text(), self.filename)
+            self.update_studentlistlabel()
+        except Exception as e:
+            self.ui.last_download_label.setText("Error: " + str(e))
 
     def update_studentlistlabel(self):
         try:

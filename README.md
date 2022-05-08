@@ -31,18 +31,17 @@ Token benötigt.
 
 ## TODOs
 
-- ~~BUG: self.current_course switches when changing course without downloading it!~~
-- Catch Error LDAP not working when not in school
-- override page instead of error message
-- Create Grundkompetenzüberprüfungen list
-- bestehungsgrenze aus modul
-- Download Progress Bar (multiprocessing?, asyncio?)
 - statusbar
+- Download Progress Bar (multiprocessing?, asyncio?)
 - import excel for merging
+- bestehungsgrenze aus modul
 - andere Berechnungen?
 - statistics? anzahl an noten, kompetenzen, schüler, ...
 - graphes for statistics?
 - export as json
+- ~~BUG: self.current_course switches when changing course without downloading it!~~
+- ~~Catch Error LDAP not working when not in school~~
+- ~~override page instead of error message~~
 - ~~add configparser~~
 - ~~rework gui~~
 - ~~adding negative kompetenzen for GKüberprüfung/merged~~

@@ -379,11 +379,14 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def save_grades(self):
         """store grades dataframe in gradebook"""
-        if self.grade_book.get_page_from_name(self.current_course) is None:
-            self.grade_book.add_page(self.current_course, self.remove_columns(self.current_grades_df))
-            self.add_pages_checkbox(self.current_course)
+        page = self.grade_book.get_page_from_name(self.current_course)
+        if page is not None:
+            self.grade_book.remove_page(page=page)
+            show_messagebox(f"{self.current_course} overridden.")
         else:
-            show_messagebox(f"{self.current_course} is already saved.")  # TODO override instead of error message
+            self.add_pages_checkbox(self.current_course)
+        self.grade_book.add_page(self.current_course, self.remove_columns(self.current_grades_df))
+
 
     def add_pages_checkbox(self, name):
         cb = QCheckBox(name, self)
@@ -684,12 +687,12 @@ class Window(QMainWindow, Ui_MainWindow):
                       f'cache_grades: {self.cache_grades}\nmarksuggestions: {self.mark_suggestion}\n' \
                       f'competence_columns: {self.create_competence_columns}\nnegative_competences: ' \
                       f'{self.negative_competences}\ncompetence_counter: {self.competence_counter}\n' \
-                      f'wh_calculation: {self.wh_calculation}\nldap_student_list_path: {self.ldap_student_list_path}\n'\
+                      f'wh_calculation: {self.wh_calculation}\nldap_student_list_path: {self.ldap_student_list_path}\n' \
                       f'ldap_url: {self.ldap_url}'
 
         settings = SettingsDlg(self.username, self.password, self.use_student_list, self.student_list_path,
-                               self.number_cancel, ldap_url=self.ldap_url, filename=self.ldap_student_list_path,
-                               config_text=config_text, parent=self)
+                               self.number_cancel, ldap_extension=self.ldap_username_extension, ldap_url=self.ldap_url,
+                               filename=self.ldap_student_list_path, config_text=config_text, parent=self)
         if settings.exec():
             self.username = settings.ui.username_lineEdit.text()
             self.password = settings.ui.password_lineEdit.text()

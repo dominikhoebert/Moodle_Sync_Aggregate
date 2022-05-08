@@ -99,6 +99,11 @@ class GradeBook:
                 return page
         return None
 
+    def remove_page(self, name: str = None, page: GradePage = None):
+        if name is not None:
+            page = self.get_page_from_name(name)
+        self.pages.remove(page)
+
 
 if __name__ == "__main__":
     df = DataFrame([['x', 'y', 'z', 'r']], columns=['GK321 balbla', 'EK532 asdfg', 'GEK844 jrfnn', 'asdjfj'])
