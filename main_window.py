@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'moodle_sync_aggregate.ui'
+# Form implementation generated from reading ui file '.\moodle_sync_aggregate.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -17,8 +17,8 @@ class Ui_MainWindow(object):
         MainWindow.resize(745, 503)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.gradesLayout = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.gradesLayout.setObjectName("verticalLayout_4")
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.centralwidget)
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.splitter = QtWidgets.QSplitter(self.centralwidget)
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setObjectName("splitter")
@@ -46,7 +46,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.verticalLayoutWidget_2)
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.gradesLayout.addWidget(self.splitter)
+        self.verticalLayout_4.addWidget(self.splitter)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.reload_pushButton = QtWidgets.QPushButton(self.centralwidget)
@@ -64,10 +64,17 @@ class Ui_MainWindow(object):
         self.export_pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.export_pushButton.setObjectName("export_pushButton")
         self.horizontalLayout.addWidget(self.export_pushButton)
-        self.gradesLayout.addLayout(self.horizontalLayout)
+        self.import_pushButton = QtWidgets.QPushButton(self.centralwidget)
+        self.import_pushButton.setObjectName("import_pushButton")
+        self.horizontalLayout.addWidget(self.import_pushButton)
+        self.verticalLayout_4.addLayout(self.horizontalLayout)
+        self.statusbar_label = QtWidgets.QLabel(self.centralwidget)
+        self.statusbar_label.setMaximumSize(QtCore.QSize(16777215, 13))
+        self.statusbar_label.setObjectName("statusbar_label")
+        self.verticalLayout_4.addWidget(self.statusbar_label)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 745, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 745, 21))
         self.menubar.setObjectName("menubar")
         self.menuDatei = QtWidgets.QMenu(self.menubar)
         self.menuDatei.setObjectName("menuDatei")
@@ -92,15 +99,7 @@ class Ui_MainWindow(object):
         self.save_pushButton.setText(_translate("MainWindow", "Save"))
         self.merge_pushButton.setText(_translate("MainWindow", "Merge"))
         self.export_pushButton.setText(_translate("MainWindow", "Export"))
+        self.import_pushButton.setText(_translate("MainWindow", "Import"))
+        self.statusbar_label.setText(_translate("MainWindow", "Status"))
         self.menuDatei.setTitle(_translate("MainWindow", "File"))
         self.actionSettings.setText(_translate("MainWindow", "Settings"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())

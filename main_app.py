@@ -191,6 +191,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionSettings.triggered.connect(self.open_settings)
         self.save_pushButton.clicked.connect(self.save_grades)
         self.merge_pushButton.clicked.connect(self.merge)
+        self.import_pushButton.clicked.connect(self.import_table)
 
         # Data
         self.current_course = None  # Text
@@ -246,12 +247,17 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             show_messagebox("Moodle Login not defined. Please check Settings.")
 
+    def set_statusbar(self, text: str):
+        """set statusbar text"""
+        self.statusbar_label.setText(text)
+
     def get_course_id(self, name):
         """returns the moodle id to a course"""
         return self.courses[name]['id']
 
     def download_courses(self):
         """downloads recent courses"""
+        self.set_statusbar("Downloading Courses...")
         if self.moodle:
             try:
                 self.courses = self.moodle.get_recent_courses()
@@ -261,6 +267,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 show_messagebox("Failed to load courses. Please check Settings.", e)
         else:
             show_messagebox("Moodle URL/Key not defined. Please check Settings.")
+        self.set_statusbar("Courses downloaded")
 
     def set_courses(self):
         """ displays in the ui courses """
@@ -288,6 +295,7 @@ class Window(QMainWindow, Ui_MainWindow):
     def download_grades(self):
         """When Download Button pressed.
         loads studentlist, loads grades from selected course, preparing grades, creating checkboxes."""
+        self.set_statusbar(f"Downloading Grades for {self.selected_course}...")
         # Load Studentlist: first try from ldap then from external path
         if self.student_list is None:
             self.student_list = load_student_list(self.ldap_student_list_path)
@@ -299,16 +307,17 @@ class Window(QMainWindow, Ui_MainWindow):
             self.courselistWidget.setCurrentRow(0)
 
         self.current_course = self.selected_course
+        statusbar_text = ""
 
         files = [f.split(".")[0] for f in os.listdir('data/')]
         if self.cache_grades:
             if self.current_course in files:
                 grades = pd.read_csv(f"data/{self.current_course}.csv")
                 grades = grades.drop(['Unnamed: 0'], axis=1, errors='ignore')
-                print(f"{self.current_course} loaded from file")
+                statusbar_text = f"{self.current_course} loaded from file "
             else:
                 grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
-                print(f"{self.current_course} saved to file")
+                statusbar_text = f"{self.current_course} saved to file "
         else:
             grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
         grades = self.merge_group_to_grades(grades)
@@ -344,7 +353,7 @@ class Window(QMainWindow, Ui_MainWindow):
             grades.insert(len(grades.columns), '∅SMÜ', '=')
 
         self.current_grades_df = grades
-
+        self.set_statusbar(f"{statusbar_text}Grades for {self.selected_course} downloaded")
         self.create_modules_list(grades)
 
     def create_modules_list(self, grades):
@@ -386,7 +395,7 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             self.add_pages_checkbox(self.current_course)
         self.grade_book.add_page(self.current_course, self.remove_columns(self.current_grades_df))
-
+        self.set_statusbar(f"{self.current_course} saved.")
 
     def add_pages_checkbox(self, name):
         cb = QCheckBox(name, self)
@@ -416,6 +425,8 @@ class Window(QMainWindow, Ui_MainWindow):
             merged_course_name = f"{l_page_name}+"
             self.grade_book.add_page(merged_course_name, l_grades)
             self.add_pages_checkbox(merged_course_name)
+        statusbar_text = ",".join(l_pages_merge)
+        self.set_statusbar(f"{statusbar_text} merged.")
 
     def export_grades(self):
         """ creates a worksheet for every gradepage.
@@ -680,6 +691,13 @@ class Window(QMainWindow, Ui_MainWindow):
         if file:
             wb.save(file)
             self.settings.setValue("dir", file[:file.rfind("/")])
+            self.set_statusbar(f"Exported to {file}.")
+        else:
+            self.set_statusbar("Export aborted.")
+
+    def import_table(self):
+        # TODO implement import
+        pass
 
     def open_settings(self):
         config_text = f'Config file at {self.config_path}:\nMoodleURL: {self.url}\n' \
