@@ -31,7 +31,7 @@ Token benötigt.
 
 ## TODOs
 
-- BUG: self.current_course switches when changing course without downloading it!
+- ~~BUG: self.current_course switches when changing course without downloading it!~~
 - Catch Error LDAP not working when not in school
 - override page instead of error message
 - Create Grundkompetenzüberprüfungen list

@@ -194,6 +194,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # Data
         self.current_course = None  # Text
+        self.selected_course = None  # Text
         self.courses = None  # Dict Course name:id
         self.modules_checkboxes = None  # List of Checkboxes for Modules
         self.pages_checkboxes = []  # List of Checkboxes for Pages
@@ -270,7 +271,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.courselistWidget.blockSignals(False)
 
     def course_changed(self, course):
-        self.current_course = course.text()
+        self.selected_course = course.text()
 
     def merge_group_to_grades(self, grades):
         """ loads and merges the user info (for the groups) for all students in a course """
@@ -294,8 +295,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.student_list = load_student_list(self.student_list_path)
 
         # Check if a course is selected. if not choose first one
-        if self.current_course is None:
+        if self.selected_course is None:
             self.courselistWidget.setCurrentRow(0)
+
+        self.current_course = self.selected_course
 
         files = [f.split(".")[0] for f in os.listdir('data/')]
         if self.cache_grades:
