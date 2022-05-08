@@ -4,3 +4,4 @@ dist/
 build/
 *.spec
 ldap_studentlist.csv
+/config.ini

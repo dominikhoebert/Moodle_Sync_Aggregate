@@ -4,10 +4,9 @@ import json
 import csv
 import pandas as pd
 
-# TODO Catch Error LDAP not working when not in school
 
-def ldap_studenlist_download(username: str, password: str, filename: str):
-    ldap_connection = ldap.initialize('ldap://dc-01.tgm.ac.at:389', bytes_mode=False)  # TODO add to settings
+def ldap_studenlist_download(url: str, username: str, password: str, filename: str):
+    ldap_connection = ldap.initialize(url, bytes_mode=False)
     ldap_connection.simple_bind_s(username, password)
 
     ldap_search = ldap.asyncsearch.List(ldap_connection)

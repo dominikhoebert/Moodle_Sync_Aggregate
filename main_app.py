@@ -18,6 +18,7 @@ from SettingsDlg import SettingsDlg
 from moodle_sync import MoodleSync
 from conditional_formating import custom_conditional_formatting
 from data_classes import GradeBook, GradePage, Competence, Module
+from configparser_module import Config
 
 
 # Translate .ui to .py
@@ -156,6 +157,9 @@ class Window(QMainWindow, Ui_MainWindow):
         super().__init__(parent)
         self.setupUi(self)
 
+        self.config_path = "config.ini"
+        self.config = Config(self.config_path).config['Moodle_Sync_Aggregate']
+
         self.gradesLayout = QVBoxLayout()
         self.gradesLayout.setAlignment(Qt.AlignTop)
         self.groupbox = QGroupBox('Grades')
@@ -199,42 +203,36 @@ class Window(QMainWindow, Ui_MainWindow):
         self.current_grades_df = None
 
         # Config
-        self.settings = QSettings('TGM', 'Moodle_Sync_Grading')
+        self.settings = QSettings(self.config['qsettingscompany'], self.config['qsettingsapplication'])
         # self.settings.clear()
         self.resize(self.settings.value("size", QSize(1000, 800)))
         self.move(self.settings.value("pos", QPoint(50, 50)))
         if self.settings.contains('splitter'):
             self.splitter.restoreState(self.settings.value('splitter'))
         self.use_student_list = self.settings.value("use_student_list", False)
-        self.create_competence_columns = self.settings.value('create_competence_columns', True)
-        self.mark_suggestion = self.settings.value('mark_suggestion', False)
-        self.negative_competences = True
-        self.competence_counter = True
-        self.wh_calculation = True
+        self.create_competence_columns = self.config.getboolean('competence_columns')
+        self.mark_suggestion = self.config.getboolean('marksuggestions')
+        self.negative_competences = self.config.getboolean('negative_competences')
+        self.competence_counter = self.config.getboolean('competence_counter')
+        self.wh_calculation = self.config.getboolean('wh_calculation')
+        self.cache_grades = self.config.getboolean('cache_grades')
         self.number_cancel = self.settings.value('number_cancel', 2)
         if self.use_student_list == 'true' or self.use_student_list is True:
             self.use_student_list = True
         else:
             self.use_student_list = False
-        if self.create_competence_columns == 'true' or self.create_competence_columns is True:
-            self.create_competence_columns = True
-        else:
-            self.create_competence_columns = False
-        if self.mark_suggestion == 'true' or self.mark_suggestion is True:
-            self.mark_suggestion = True
-        else:
-            self.mark_suggestion = False
 
         # Startup
-        self.url = self.settings.value("url", "https://elearning.tgm.ac.at/")
-        self.service = self.settings.value("service", "tgm_hoedmoodlesync")
+        self.url = self.config['MoodleURL']
+        self.service = self.config['Service_name']
         self.username = self.settings.value("username", None)
         self.password = self.settings.value("password", None)
-        self.ldap_username_extension = self.settings.value("ldap_username_extension", '@tgm.ac.at')
+        self.ldap_username_extension = self.config['Username_extension']
         self.student_list_path = self.settings.value("student_list",
                                                      "~/tgm - Die Schule der Technik/HIT - Abteilung für Informations"
                                                      "technologie - Dokumente/Organisation/Tools/studentlistv2.csv")
-        self.ldap_student_list_path = "ldap_studentlist.csv"  # TODO to settings?
+        self.ldap_student_list_path = self.config['ldap_student_list_path']
+        self.ldap_url = self.config['ldap_url']
         self.moodle = None
 
         self.login()
@@ -300,14 +298,16 @@ class Window(QMainWindow, Ui_MainWindow):
             self.courselistWidget.setCurrentRow(0)
 
         files = [f.split(".")[0] for f in os.listdir('data/')]
-        if self.current_course in files:
-            grades = pd.read_csv(f"data/{self.current_course}.csv")
-            grades = grades.drop(['Unnamed: 0'], axis=1, errors='ignore')
-            print(f"{self.current_course} loaded from file")
+        if self.cache_grades:
+            if self.current_course in files:
+                grades = pd.read_csv(f"data/{self.current_course}.csv")
+                grades = grades.drop(['Unnamed: 0'], axis=1, errors='ignore')
+                print(f"{self.current_course} loaded from file")
+            else:
+                grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
+                print(f"{self.current_course} saved to file")
         else:
             grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
-            grades.to_csv(f'data/{self.current_course}.csv')  # TODO create mode for this
-            print(f"{self.current_course} saved to file")
         grades = self.merge_group_to_grades(grades)
         grades = grades.sort_values(by=['Gruppen', 'Schüler'])
 
@@ -439,7 +439,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
             for ind, col in enumerate(insert_columns):
                 index = insert_columns[col]
-                page.grades.insert(index+1+ind, col + "*", '=')
+                page.grades.insert(index + 1 + ind, col + "*", '=')
 
             ws = grades_page_to_excel_worksheet(page, wb)
             ws = set_column_width(ws)
@@ -676,28 +676,28 @@ class Window(QMainWindow, Ui_MainWindow):
             self.settings.setValue("dir", file[:file.rfind("/")])
 
     def open_settings(self):
-        settings = SettingsDlg(self.url, self.service, self.username, self.password, self.use_student_list,
-                               self.student_list_path, self.mark_suggestion, self.ldap_username_extension,
-                               self.number_cancel, filename=self.ldap_student_list_path, parent=self)
+        config_text = f'Config file at {self.config_path}:\nMoodleURL: {self.url}\n' \
+                      f'Service_name: {self.service}\nUsername_extension: {self.ldap_username_extension}\n' \
+                      f'cache_grades: {self.cache_grades}\nmarksuggestions: {self.mark_suggestion}\n' \
+                      f'competence_columns: {self.create_competence_columns}\nnegative_competences: ' \
+                      f'{self.negative_competences}\ncompetence_counter: {self.competence_counter}\n' \
+                      f'wh_calculation: {self.wh_calculation}\nldap_student_list_path: {self.ldap_student_list_path}\n'\
+                      f'ldap_url: {self.ldap_url}'
+
+        settings = SettingsDlg(self.username, self.password, self.use_student_list, self.student_list_path,
+                               self.number_cancel, ldap_url=self.ldap_url, filename=self.ldap_student_list_path,
+                               config_text=config_text, parent=self)
         if settings.exec():
-            self.url = settings.ui.url_lineEdit.text()
-            self.service = settings.ui.service_lineEdit.text()
             self.username = settings.ui.username_lineEdit.text()
             self.password = settings.ui.password_lineEdit.text()
-            self.ldap_username_extension = settings.ui.extension_lineEdit.text()
             self.use_student_list = settings.ui.checkBox.isChecked()
             self.student_list_path = settings.ui.studentlist_lineEdit.text()
-            self.mark_suggestion = settings.ui.marksuggestion_checkBox.isChecked()
             self.number_cancel = settings.ui.cancle_number_spinBox.value()
 
-            self.settings.setValue("url", self.url)
-            self.settings.setValue("service", self.service)
             self.settings.setValue("username", self.username)
             self.settings.setValue("password", self.password)
-            self.settings.setValue("ldap_username_extension", self.ldap_username_extension)
             self.settings.setValue("use_student_list", self.use_student_list)
             self.settings.setValue("student_list", self.student_list_path)
-            self.settings.setValue("mark_suggestion", self.mark_suggestion)
             self.settings.setValue("number_cancel", self.number_cancel)
         self.login()
 
