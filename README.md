@@ -32,7 +32,8 @@ Token benötigt.
 ## TODOs
 
 - ~~statusbar~~
-- import excel for merging
+- ~~import excel for merging~~
+- improve import functionality
 - Download Progress Bar (multiprocessing?, asyncio?)
 - bestehungsgrenze aus modul
 - andere Berechnungen?

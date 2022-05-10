@@ -5,7 +5,7 @@ import json
 import os
 
 import pandas as pd
-from openpyxl import Workbook, worksheet
+from openpyxl import Workbook, worksheet, load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
@@ -15,6 +15,7 @@ from PyQt5.QtCore import QSettings, QPoint, QSize, Qt
 
 from main_window import Ui_MainWindow
 from SettingsDlg import SettingsDlg
+from import_dialog import ImportDialog
 from moodle_sync import MoodleSync
 from conditional_formating import custom_conditional_formatting
 from data_classes import GradeBook, GradePage, Competence, Module
@@ -353,7 +354,7 @@ class Window(QMainWindow, Ui_MainWindow):
             grades.insert(len(grades.columns), '∅SMÜ', '=')
 
         self.current_grades_df = grades
-        self.set_statusbar(f"{statusbar_text}Grades for {self.selected_course} downloaded")
+        self.set_statusbar(f"{statusbar_text}Grades for {self.current_course} downloaded")
         self.create_modules_list(grades)
 
     def create_modules_list(self, grades):
@@ -456,7 +457,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
             for ind, col in enumerate(insert_columns):
                 index = insert_columns[col]
-                page.grades.insert(index + 1 + ind, col + "*", '=')
+                if col + "*" not in page.grades.columns:
+                    page.grades.insert(index + 1 + ind, col + "*", '=')
 
             ws = grades_page_to_excel_worksheet(page, wb)
             ws = set_column_width(ws)
@@ -696,8 +698,50 @@ class Window(QMainWindow, Ui_MainWindow):
             self.set_statusbar("Export aborted.")
 
     def import_table(self):
-        # TODO implement import
-        pass
+        file, _ = QFileDialog.getOpenFileName(self, "Import Excel", "", "Excel files (*.xlsx)")
+        if file:
+            excel = load_workbook(file, data_only=True)
+            dlg = ImportDialog(excel.sheetnames)
+            if dlg.exec():
+                sheet_name = dlg.get_selected_sheet()
+                # iter over first row to find the last interesting column
+                ws = excel[sheet_name]
+                self.current_course = sheet_name
+                end_column = None
+                end_column_letter = None
+                email_column = None
+                for cell in ws[1]:
+                    if cell.value == "Email":
+                        email_column = cell.column
+                    if cell.value is None:
+                        end_column = cell.column
+                        end_column_letter = cell.column_letter
+                        break
+
+                # iter over first row to find the last interesting row
+                end_row = None
+                for cell in ws["A"]:
+                    if cell.value is None:
+                        end_row = cell.row
+                        break
+
+                if end_column is None:
+                    end_column = ws.max_column
+
+                if end_row is None:
+                    end_row = ws.max_row + 1
+
+                from itertools import islice
+
+                data = ws.values
+                cols = next(data)[0:end_column - 1]
+                data = list(data)
+                data = (islice(r, 0, end_column - 1) for r in data[:end_row - 2])
+                grades = pd.DataFrame(data, columns=cols)
+
+                self.current_grades_df = grades
+                self.set_statusbar(f"Grades for {self.current_course} imported")
+                self.create_modules_list(grades)
 
     def open_settings(self):
         config_text = f'Config file at {self.config_path}:\nMoodleURL: {self.url}\n' \
