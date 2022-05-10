@@ -404,6 +404,14 @@ class Window(QMainWindow, Ui_MainWindow):
         self.pagesLayout.addWidget(cb)
         self.pages_checkboxes.append(cb)
 
+    def start_progressbar(self):
+        self.progressBar.setVisible(True)
+        self.progressBar.setRange(0, 0)
+
+    def stop_progressbar(self):
+        self.progressBar.setVisible(False)
+        self.progressBar.setRange(0, 1)
+
     def merge(self):
         """ merges current page to selected pages in gradebook """
         r_page = self.remove_columns(self.current_grades_df)
@@ -708,14 +716,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 ws = excel[sheet_name]
                 self.current_course = sheet_name
                 end_column = None
-                end_column_letter = None
-                email_column = None
                 for cell in ws[1]:
-                    if cell.value == "Email":
-                        email_column = cell.column
                     if cell.value is None:
                         end_column = cell.column
-                        end_column_letter = cell.column_letter
                         break
 
                 # iter over first row to find the last interesting row

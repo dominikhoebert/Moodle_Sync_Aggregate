@@ -4,25 +4,23 @@
 # https://stackoverflow.com/questions/19442443/busy-indication-with-pyqt-progress-bar
 
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QCheckBox, QFileDialog, QScrollArea, QVBoxLayout, \
-    QGroupBox
-from PyQt5.QtCore import QSettings, QPoint, QSize, Qt
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QProgressBar, QPushButton
+from PyQt5 import QtCore, QtWidgets
 import time
+import sys
 
 
-
-class MyCustomWidget(QtGui.QWidget):
+class MyCustomWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(MyCustomWidget, self).__init__(parent)
-        layout = QtGui.QVBoxLayout(self)
+        layout = QVBoxLayout(self)
 
         # Create a progress bar and a button and add them to the main layout
-        self.progressBar = QtGui.QProgressBar(self)
+        self.progressBar = QProgressBar(self)
         self.progressBar.setRange(0, 1)
         layout.addWidget(self.progressBar)
-        button = QtGui.QPushButton("Start", self)
+        button = QPushButton("Start", self)
         layout.addWidget(button)
 
         button.clicked.connect(self.onStart)
@@ -45,3 +43,10 @@ class TaskThread(QtCore.QThread):
     def run(self):
         time.sleep(3)
         self.taskFinished.emit()
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    win = MyCustomWidget()
+    win.show()
+    sys.exit(app.exec())
