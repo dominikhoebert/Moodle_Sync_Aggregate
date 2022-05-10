@@ -34,7 +34,7 @@ Token benötigt.
 - ~~statusbar~~
 - ~~import excel for merging~~
 - improve import functionality
-- Download Progress Bar (multiprocessing?, asyncio?)
+- ~~Download Progress Bar (multiprocessing?, asyncio?)~~
 - bestehungsgrenze aus modul
 - andere Berechnungen?
 - statistics? anzahl an noten, kompetenzen, schüler, ...

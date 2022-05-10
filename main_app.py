@@ -16,6 +16,7 @@ from PyQt5.QtCore import QSettings, QPoint, QSize, Qt
 from main_window import Ui_MainWindow
 from SettingsDlg import SettingsDlg
 from import_dialog import ImportDialog
+from thread_classes import MoodleDownloaderCourses, MoodleDownloaderGradeReport, MoodleDownloaderStudentInfo
 from moodle_sync import MoodleSync
 from conditional_formating import custom_conditional_formatting
 from data_classes import GradeBook, GradePage, Competence, Module
@@ -256,18 +257,30 @@ class Window(QMainWindow, Ui_MainWindow):
         """returns the moodle id to a course"""
         return self.courses[name]['id']
 
+    def thread_error(self, e):
+        """thread error handler"""
+        show_messagebox(e)
+        self.statusbar_label.setText(e)
+
     def download_courses(self):
         """downloads recent courses"""
         self.set_statusbar("Downloading Courses...")
         if self.moodle:
-            try:
-                self.courses = self.moodle.get_recent_courses()
-                self.set_courses()
-                self.download_pushButton.setEnabled(True)
-            except Exception as e:
-                show_messagebox("Failed to load courses. Please check Settings.", e)
+            self.start_progressbar()
+            self.reload_pushButton.setEnabled(False)
+            downloader = MoodleDownloaderCourses()
+            downloader.taskFinished.connect(self.courses_downloaded)
+            downloader.error.connect(self.thread_error)
+            downloader.download(self.moodle)
         else:
             show_messagebox("Moodle URL/Key not defined. Please check Settings.")
+
+    def courses_downloaded(self, courses):
+        self.stop_progressbar()
+        self.courses = courses
+        self.set_courses()
+        self.reload_pushButton.setEnabled(True)
+        self.download_pushButton.setEnabled(True)
         self.set_statusbar("Courses downloaded")
 
     def set_courses(self):
@@ -280,18 +293,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def course_changed(self, course):
         self.selected_course = course.text()
-
-    def merge_group_to_grades(self, grades):
-        """ loads and merges the user info (for the groups) for all students in a course """
-        user_list = []
-        for uid in grades.userid:
-            user_list.append({"userid": uid, "courseid": self.get_course_id(self.current_course)})
-
-        user_info = self.moodle.get_student_info(userlist=user_list)
-        grades = grades.merge(user_info, how='left', left_on='userid', right_on='id')
-        grades = grades.drop(['userid', 'id', 'fullname', 'Email2'], axis=1, errors='ignore')
-        grades = grades.rename(columns={'groups': 'Gruppen', 'email': 'Email'})
-        return grades
 
     def download_grades(self):
         """When Download Button pressed.
@@ -315,13 +316,50 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.current_course in files:
                 grades = pd.read_csv(f"data/{self.current_course}.csv")
                 grades = grades.drop(['Unnamed: 0'], axis=1, errors='ignore')
-                statusbar_text = f"{self.current_course} loaded from file "
+                self.grades_downloaded(grades)
             else:
-                grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
-                statusbar_text = f"{self.current_course} saved to file "
+                self.start_download_grades_thread()
         else:
-            grades = self.moodle.get_gradereport_of_course(self.get_course_id(self.current_course))
-        grades = self.merge_group_to_grades(grades)
+            self.start_download_grades_thread()
+
+    def start_download_grades_thread(self):
+        self.download_pushButton.setEnabled(False)
+        self.start_progressbar()
+        self.set_statusbar("Downloading Grades...")
+        downloader = MoodleDownloaderGradeReport()
+        downloader.taskFinished.connect(self.grades_downloaded)
+        downloader.error.connect(self.thread_error)
+        downloader.download(self.moodle, self.get_course_id(self.current_course))
+
+    def grades_downloaded(self, grades):
+        self.stop_progressbar()
+        self.download_pushButton.setEnabled(True)
+        self.set_statusbar("Grades downloaded")
+        self.merge_group_to_grades(grades)
+
+    def merge_group_to_grades(self, grades):
+        """ loads and merges the user info (for the groups) for all students in a course """
+        user_list = []
+        for uid in grades.userid:
+            user_list.append({"userid": uid, "courseid": self.get_course_id(self.current_course)})
+        self.grades = grades
+
+        self.start_progressbar()
+        self.set_statusbar("Downloading StudentInfo...")
+        downloader = MoodleDownloaderStudentInfo()
+        downloader.taskFinished.connect(self.student_info_downloaded)
+        downloader.error.connect(self.thread_error)
+        downloader.download(self.moodle, user_list)
+
+    def student_info_downloaded(self, user_info):
+        self.stop_progressbar()
+        self.set_statusbar("StudentInfo downloaded")
+        grades = self.grades.merge(user_info, how='left', left_on='userid', right_on='id')
+        grades = grades.drop(['userid', 'id', 'fullname', 'Email2'], axis=1, errors='ignore')
+        grades = grades.rename(columns={'groups': 'Gruppen', 'email': 'Email'})
+        self.prepare_grades_dataframe(grades)
+
+    def prepare_grades_dataframe(self, grades):
         grades = grades.sort_values(by=['Gruppen', 'Schüler'])
 
         grades = replace_grades(grades)
@@ -354,7 +392,7 @@ class Window(QMainWindow, Ui_MainWindow):
             grades.insert(len(grades.columns), '∅SMÜ', '=')
 
         self.current_grades_df = grades
-        self.set_statusbar(f"{statusbar_text}Grades for {self.current_course} downloaded")
+        self.set_statusbar(f"Grades for {self.current_course} downloaded")
         self.create_modules_list(grades)
 
     def create_modules_list(self, grades):
