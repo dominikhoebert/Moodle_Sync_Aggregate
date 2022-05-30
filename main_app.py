@@ -587,15 +587,16 @@ class Window(QMainWindow, Ui_MainWindow):
                     custom_conditional_formatting(ws, cell_range, 'K')
 
                 elif module == 'Punkte' and self.mark_suggestion:
+                    #=SUMPRODUCT(--EXACT(E26;"GKü"))*-1+SUMPRODUCT(--EXACT(E26;"EKü"))+SUMPRODUCT(--EXACT(E26;"EKv"))*2+SUMPRODUCT(--EXACT(F26;"GKü"))*-1+SUMPRODUCT(--EXACT(F26;"EKü"))+SUMPRODUCT(--EXACT(F26;"EKv"))*2+SUMPRODUCT(--EXACT(G26;"GKü"))*-1+SUMPRODUCT(--EXACT(G26;"EKü"))+SUMPRODUCT(--EXACT(G26;"EKv"))*2+SUMPRODUCT(--EXACT(H26;"GKü"))*-1+SUMPRODUCT(--EXACT(H26;"EKü"))+SUMPRODUCT(--EXACT(H26;"EKv"))*2+SUMPRODUCT(--EXACT(I26;"GKü"))*-1+SUMPRODUCT(--EXACT(I26;"EKü"))+SUMPRODUCT(--EXACT(I26;"EKv"))*2+SUMPRODUCT(--EXACT(J26;"GKü"))*-1+SUMPRODUCT(--EXACT(J26;"EKü"))+SUMPRODUCT(--EXACT(J26;"EKv"))*2+SUMPRODUCT(--EXACT(K26;"GKü"))*-1+SUMPRODUCT(--EXACT(K26;"EKü"))+SUMPRODUCT(--EXACT(K26;"EKv"))*2+SUMPRODUCT(--EXACT(L26;"GKü"))*-1+SUMPRODUCT(--EXACT(L26;"EKü"))+SUMPRODUCT(--EXACT(L26;"EKv"))*2+SUMPRODUCT(--EXACT(M26;"GKü"))*-1+SUMPRODUCT(--EXACT(M26;"EKü"))+SUMPRODUCT(--EXACT(M26;"EKv"))*2+SUMPRODUCT(--EXACT(N26;"GKü"))*-1+SUMPRODUCT(--EXACT(N26;"EKü"))+SUMPRODUCT(--EXACT(N26;"EKv"))*2+SUMPRODUCT(--EXACT(O26;"GKü"))*-1+SUMPRODUCT(--EXACT(O26;"EKü"))+SUMPRODUCT(--EXACT(O26;"EKv"))*2+SUMPRODUCT(--EXACT(P26;"GKü"))*-1+SUMPRODUCT(--EXACT(P26;"EKü"))+SUMPRODUCT(--EXACT(P26;"EKv"))*2+SUMPRODUCT(--EXACT(Q26;"GKü"))*-1+SUMPRODUCT(--EXACT(Q26;"EKü"))+SUMPRODUCT(--EXACT(Q26;"EKv"))*2+SUMPRODUCT(--EXACT(R26;"GKü"))*-1+SUMPRODUCT(--EXACT(R26;"EKü"))+SUMPRODUCT(--EXACT(R26;"EKv"))*2+SUMPRODUCT(--EXACT(S26;"GKü"))*-1+SUMPRODUCT(--EXACT(S26;"EKü"))+SUMPRODUCT(--EXACT(S26;"EKv"))*2+SUMPRODUCT(--EXACT(T26;"GKü"))*-1+SUMPRODUCT(--EXACT(T26;"EKü"))+SUMPRODUCT(--EXACT(T26;"EKv"))*2+SUMPRODUCT(--EXACT(U26;"GKü"))*-1+SUMPRODUCT(--EXACT(U26;"EKü"))+SUMPRODUCT(--EXACT(U26;"EKv"))*2
                     formular = ''
                     for m in page.modules:
                         affected_cell = f"SUMPRODUCT(--EXACT({m.column_letter}#"
                         formular += f'{affected_cell},"GKü"))*-1+{affected_cell},"EKü"))+{affected_cell},"EKv"))*2+'
-                        if m.type == 'GK':
+                        if m.type == 'G':
                             formular += f'{affected_cell},"ü"))*-1+'
-                        elif m.type == 'GEK':
+                        elif m.type == 'GE':
                             formular += f'{affected_cell},"ü"))*-1+'
-                        elif m.type == 'EK':
+                        elif m.type == 'E':
                             formular += f'{affected_cell},"ü"))+'
                             formular += f'{affected_cell},"v"))*2+'
 
