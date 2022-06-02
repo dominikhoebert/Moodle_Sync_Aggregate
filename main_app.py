@@ -268,10 +268,10 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.moodle:
             self.start_progressbar()
             self.reload_pushButton.setEnabled(False)
-            downloader = MoodleDownloaderCourses()
-            downloader.taskFinished.connect(self.courses_downloaded)
-            downloader.error.connect(self.thread_error)
-            downloader.download(self.moodle)
+            self.downloader = MoodleDownloaderCourses()
+            self.downloader.taskFinished.connect(self.courses_downloaded)
+            self.downloader.error.connect(self.thread_error)
+            self.downloader.download(self.moodle)
         else:
             show_messagebox("Moodle URL/Key not defined. Please check Settings.")
 
@@ -326,10 +326,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.download_pushButton.setEnabled(False)
         self.start_progressbar()
         self.set_statusbar("Downloading Grades...")
-        downloader = MoodleDownloaderGradeReport()
-        downloader.taskFinished.connect(self.grades_downloaded)
-        downloader.error.connect(self.thread_error)
-        downloader.download(self.moodle, self.get_course_id(self.current_course))
+        self.downloader = MoodleDownloaderGradeReport()
+        self.downloader.taskFinished.connect(self.grades_downloaded)
+        self.downloader.error.connect(self.thread_error)
+        self.downloader.download(self.moodle, self.get_course_id(self.current_course))
 
     def grades_downloaded(self, grades):
         self.stop_progressbar()
@@ -346,10 +346,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.start_progressbar()
         self.set_statusbar("Downloading StudentInfo...")
-        downloader = MoodleDownloaderStudentInfo()
-        downloader.taskFinished.connect(self.student_info_downloaded)
-        downloader.error.connect(self.thread_error)
-        downloader.download(self.moodle, user_list)
+        self.downloader = MoodleDownloaderStudentInfo()
+        self.downloader.taskFinished.connect(self.student_info_downloaded)
+        self.downloader.error.connect(self.thread_error)
+        self.downloader.download(self.moodle, user_list)
 
     def student_info_downloaded(self, user_info):
         self.stop_progressbar()
