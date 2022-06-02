@@ -31,6 +31,7 @@ Token benötigt.
 
 ## TODOs
 
+- Only starts in debug mode?
 - ~~statusbar~~
 - ~~import excel for merging~~
 - improve import functionality
