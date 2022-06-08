@@ -31,6 +31,7 @@ Token benötigt.
 
 ## TODOs
 
+- Download aggregated grade report
 - Only starts in debug mode?
 - ~~statusbar~~
 - ~~import excel for merging~~
