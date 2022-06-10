@@ -32,16 +32,17 @@ Token benötigt.
 ## TODOs
 
 - Download aggregated grade report
-- Only starts in debug mode?
-- ~~statusbar~~
-- ~~import excel for merging~~
 - improve import functionality
-- ~~Download Progress Bar (multiprocessing?, asyncio?)~~
 - bestehungsgrenze aus modul
-- andere Berechnungen?
 - statistics? anzahl an noten, kompetenzen, schüler, ...
 - graphes for statistics?
+- andere Berechnungen?
 - export as json
+- rework export function object oriented, more stable
+- ~~Only starts in debug mode?~~
+- ~~statusbar~~
+- ~~import excel for merging~~
+- ~~Download Progress Bar (multiprocessing?, asyncio?)~~
 - ~~BUG: self.current_course switches when changing course without downloading it!~~
 - ~~Catch Error LDAP not working when not in school~~
 - ~~override page instead of error message~~
