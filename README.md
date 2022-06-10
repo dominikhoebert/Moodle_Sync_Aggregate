@@ -29,16 +29,22 @@ Token benötigt.
 - pandas 1.3.5
 - python-ldap 3.4.0
 
+## Run from Source
+1. pip install -r requirements.txt
+2. Copy content of additional_cert.pem into venv(or other python environment folter)/lib/python3.10/site-packages/certifi/cacert.pem
+
+Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
+
 ## TODOs
 
 - Download aggregated grade report
+- rework export function object oriented, more stable
 - improve import functionality
 - bestehungsgrenze aus modul
 - statistics? anzahl an noten, kompetenzen, schüler, ...
 - graphes for statistics?
 - andere Berechnungen?
 - export as json
-- rework export function object oriented, more stable
 - ~~Only starts in debug mode?~~
 - ~~statusbar~~
 - ~~import excel for merging~~
@@ -88,10 +94,3 @@ Token benötigt.
 - ~~Notenberechnung aus Notenschlüssel~~
 - ~~Bedingte Formatierung für Notenvorschlag~~
 - ~~Bedingte Formatierung für Kompetenzbereiche~~
-
-## Run from Source
-1. pip install -r requirements.txt
-2. Copy content of additional_cert.pem into venv(or other python environment folter)/lib/python3.10/site-packages/certifi/cacert.pem
-
-Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
-
