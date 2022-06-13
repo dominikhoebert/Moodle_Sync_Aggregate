@@ -37,7 +37,7 @@ Credit Moodle API by [mrcinv](https://github.com/mrcinv/moodle_api.py)
 
 ## TODOs
 
-- Download aggregated grade report
+- ~~Download aggregated grade report~~
 - rework export function object oriented, more stable
 - improve import functionality
 - bestehungsgrenze aus modul
