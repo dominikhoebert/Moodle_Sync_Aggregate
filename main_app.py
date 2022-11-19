@@ -120,7 +120,10 @@ def get_new_worksheet(workbook, title):
     # new workbook already has a worksheet. change title and return it.
     if workbook.sheetnames[0] == 'Sheet':
         ws = workbook.active
-        ws.title = title
+        try:
+            ws.title = title
+        except ValueError:
+            ws.title = title.replace("/", "")
         return ws
     else:
         return workbook.create_sheet(title)
