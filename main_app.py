@@ -531,13 +531,13 @@ class Window(QMainWindow, Ui_MainWindow):
                 module = str(cell.value)
                 cell_range = f"{cell.column_letter}2:{cell.column_letter}{max_row}"
 
-                if module.startswith("GK"):
+                if module.startswith("GK_"):
                     custom_conditional_formatting(ws, cell_range, 'GK')
                     page.get_module_by_name(module).column_letter = cell.column_letter
-                elif module.startswith("EK"):
+                elif module.startswith("EK_"):
                     custom_conditional_formatting(ws, cell_range, 'EK')
                     page.get_module_by_name(module).column_letter = cell.column_letter
-                elif module.startswith("GEK"):
+                elif module.startswith("GEK_"):
                     custom_conditional_formatting(ws, cell_range, 'GEK')
                     page.get_module_by_name(module).column_letter = cell.column_letter
                 elif module.startswith("SYT") or module.startswith("GKP"):
@@ -771,7 +771,7 @@ class Window(QMainWindow, Ui_MainWindow):
                         break
 
                 if end_column is None:
-                    end_column = ws.max_column
+                    end_column = ws.max_column + 1
 
                 if end_row is None:
                     end_row = ws.max_row + 1
